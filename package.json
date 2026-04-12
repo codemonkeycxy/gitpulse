@@ -3,20 +3,28 @@
   "version": "0.1.0",
   "description": "Mine git history and generate a visual HTML repo health report",
   "bin": {
-    "gitpulse": "./bin/gitpulse.js"
+    "gitpulse": "bin/gitpulse.js"
   },
   "scripts": {
     "test": "jest --passWithNoTests",
     "test:watch": "jest --watch"
   },
-  "keywords": ["git", "analysis", "repository", "health", "report"],
+  "keywords": [
+    "git",
+    "analysis",
+    "repository",
+    "health",
+    "report"
+  ],
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/codemonkeycxy/gitpulse.git"
+    "url": "git+https://github.com/codemonkeycxy/gitpulse.git"
   },
   "homepage": "https://github.com/codemonkeycxy/gitpulse#readme",
-  "bugs": { "url": "https://github.com/codemonkeycxy/gitpulse/issues" },
+  "bugs": {
+    "url": "https://github.com/codemonkeycxy/gitpulse/issues"
+  },
   "dependencies": {
     "chart.js": "^4.4.0",
     "commander": "^12.0.0",
@@ -27,7 +35,11 @@
   },
   "jest": {
     "testEnvironment": "node",
-    "testMatch": ["**/tests/**/*.test.js"]
+    "testMatch": [
+      "**/tests/**/*.test.js"
+    ]
   },
-  "engines": { "node": ">=18.0.0" }
+  "engines": {
+    "node": ">=18.0.0"
+  }
 }
