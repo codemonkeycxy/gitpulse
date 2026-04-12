@@ -4,7 +4,9 @@ const fs   = require('fs');
 const path = require('path');
 
 const TEMPLATE_PATH = path.join(__dirname, '../../templates/report.html');
-const CHARTJS_PATH  = path.join(__dirname, '../../node_modules/chart.js/dist/chart.umd.min.js');
+// Walk up from chart.js's main entry (dist/chart.cjs) to find the package root,
+// then resolve the UMD bundle. This works whether chart.js is hoisted (npx) or nested.
+const CHARTJS_PATH  = path.join(path.dirname(path.dirname(require.resolve('chart.js'))), 'dist/chart.umd.min.js');
 
 /**
  * Render a gitpulse data object into a self-contained HTML string.
