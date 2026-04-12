@@ -7,11 +7,14 @@
 ## Usage
 
 ```bash
-# Run from inside any repo
+# Run from inside any repo — zero install required
 npx @codemonkeycxy/gitpulse
 
 # Or point at a path
 npx @codemonkeycxy/gitpulse ./path/to/repo
+
+# Skip auto-opening the browser
+npx @codemonkeycxy/gitpulse --no-open
 ```
 
 ## Report sections
