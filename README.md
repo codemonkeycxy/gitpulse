@@ -8,10 +8,10 @@
 
 ```bash
 # Run from inside any repo
-npx gitpulse
+npx @codemonkeycxy/gitpulse
 
 # Or point at a path
-npx gitpulse ./path/to/repo
+npx @codemonkeycxy/gitpulse ./path/to/repo
 ```
 
 ## Report sections

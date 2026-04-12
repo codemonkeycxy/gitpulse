@@ -1,5 +1,5 @@
 {
-  "name": "gitpulse",
+  "name": "@codemonkeycxy/gitpulse",
   "version": "0.1.0",
   "description": "Mine git history and generate a visual HTML repo health report",
   "bin": {
