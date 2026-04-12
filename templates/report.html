@@ -103,7 +103,7 @@
         <span class="section-title">&#9312; File Churn</span>
         <span class="section-subtitle">most changed files</span>
       </div>
-      <p class="section-hint">Bar width = number of commits touching the file in the analysis window.</p>
+      <p class="section-hint">Bar width = number of commits touching the file in the <span id="churn-window"></span>.</p>
       <div class="churn-list" id="churn-list"></div>
       <div id="churn-noise-note"></div>
     </div>
@@ -186,6 +186,8 @@
     meta.repoName + ' \u00b7 ' + meta.totalCommits.toLocaleString() + ' commits \u00b7 last ' + meta.sinceLabel;
   document.getElementById('gen-date').textContent =
     'generated ' + new Date(meta.generatedAt).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+  document.getElementById('churn-window').textContent =
+    meta.sinceLabel === '12 months' ? 'last 12 months' : 'since ' + meta.sinceLabel;
 
   var charts = {};
 
