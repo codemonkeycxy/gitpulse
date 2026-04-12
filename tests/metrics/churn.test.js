@@ -23,6 +23,29 @@ describe('churn.collect', () => {
       { path: 'api/routes.ts', changes: 3, bugFixes: 1, category: 'danger' },
       { path: 'src/db.ts',     changes: 2, bugFixes: 0, category: 'churn'  },
     ]);
+    expect(result.filtered).toEqual([]);
+  });
+
+  test('excludes noise files by default and reports them in filtered', async () => {
+    git.run
+      .mockReturnValueOnce('go.sum\ngo.sum\ngo.sum\nsrc/auth.ts\nsrc/auth.ts\n')
+      .mockReturnValueOnce('');
+
+    const result = await collect(REPO, OPTS);
+
+    expect(result.files.map(f => f.path)).not.toContain('go.sum');
+    expect(result.filtered).toContain('go.sum');
+  });
+
+  test('includes noise files when allFiles is true', async () => {
+    git.run
+      .mockReturnValueOnce('go.sum\ngo.sum\ngo.sum\nsrc/auth.ts\nsrc/auth.ts\n')
+      .mockReturnValueOnce('');
+
+    const result = await collect(REPO, { ...OPTS, allFiles: true });
+
+    expect(result.files.map(f => f.path)).toContain('go.sum');
+    expect(result.filtered).toEqual([]);
   });
 
   test('appends bug-only files not in top list when bugFixes >= 3', async () => {
@@ -53,5 +76,6 @@ describe('churn.collect', () => {
     git.run.mockReturnValue('');
     const result = await collect(REPO, OPTS);
     expect(result.files).toEqual([]);
+    expect(result.filtered).toEqual([]);
   });
 });

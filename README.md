@@ -36,6 +36,7 @@ npx @codemonkeycxy/gitpulse --no-open
 | `--top <n>` | `20` | Number of files in the churn section |
 | `--no-open` | — | Don't auto-open the report in the browser |
 | `--json` | — | Output raw collected data as JSON |
+| `--all-files` | — | Include noise files (lock files, go.sum, vendor/) in the churn list |
 
 ## Inspiration
 

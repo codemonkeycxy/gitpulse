@@ -2,6 +2,22 @@
 
 const git = require('../git');
 
+// Files that churn mechanically (dep bumps, generated code) and carry no design signal.
+// Excluded by default; use --all-files to include.
+const NOISE_NAMES = new Set([
+  'go.sum', 'go.mod',
+  'package-lock.json', 'yarn.lock', 'pnpm-lock.yaml',
+  'Cargo.lock', 'Gemfile.lock', 'poetry.lock', 'composer.lock',
+]);
+const NOISE_PREFIXES = ['vendor/'];
+
+function isNoise(filePath) {
+  const name = filePath.split('/').pop();
+  if (NOISE_NAMES.has(name)) return true;
+  if (NOISE_PREFIXES.some(p => filePath.startsWith(p))) return true;
+  return false;
+}
+
 function countLines(output) {
   const counts = new Map();
   for (const line of output.split('\n')) {
@@ -17,7 +33,7 @@ function countLines(output) {
  * @param {{ since: string, top?: number }} options
  * @returns {Promise<{ files: Array<{path,changes,bugFixes,category}> }>}
  */
-async function collect(repoPath, { since, top = 20 }) {
+async function collect(repoPath, { since, top = 20, allFiles = false }) {
   const churnOut = await git.run(
     ['log', `--since=${since}`, '--name-only', '--format=', '--diff-filter=ACDMRT'],
     repoPath
@@ -29,6 +45,19 @@ async function collect(repoPath, { since, top = 20 }) {
 
   const churnMap = countLines(churnOut);
   const bugMap   = countLines(bugOut);
+
+  // Strip noise files unless the caller asked for everything.
+  // Track which ones were removed so the report can show a note.
+  const filtered = [];
+  if (!allFiles) {
+    for (const [path, changes] of churnMap) {
+      if (isNoise(path)) { filtered.push({ path, changes }); churnMap.delete(path); }
+    }
+    for (const path of bugMap.keys()) {
+      if (isNoise(path)) bugMap.delete(path);
+    }
+    filtered.sort((a, b) => b.changes - a.changes);
+  }
 
   const sorted   = [...churnMap.entries()].sort((a, b) => b[1] - a[1]);
   const topFiles = sorted.slice(0, top);
@@ -52,7 +81,7 @@ async function collect(repoPath, { since, top = 20 }) {
       category: 'bugs',
     }));
 
-  return { files: [...files, ...extras] };
+  return { files: [...files, ...extras], filtered: filtered.map(f => f.path) };
 }
 
 module.exports = { collect };

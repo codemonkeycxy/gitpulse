@@ -82,6 +82,10 @@
   /* Section hint */
   .section-hint { font-size: 11px; color: #475569; margin-bottom: 12px; line-height: 1.6; }
 
+  /* Noise note */
+  .noise-note { font-size: 11px; color: #334155; margin-top: 10px; }
+  .noise-note code { background: #0f172a; border-radius: 3px; padding: 1px 5px; font-family: monospace; color: #64748b; }
+
   /* Show more / toggle button */
   .show-more-btn { background: none; border: 1px solid #334155; color: #64748b; border-radius: 4px; padding: 4px 10px; font-size: 11px; cursor: pointer; margin-top: 8px; }
   .show-more-btn:hover { border-color: #475569; color: #94a3b8; }
@@ -113,6 +117,7 @@
       </div>
       <p class="section-hint">Bar width = number of commits touching the file. <strong style="color:#ef4444">Hotspot</strong> = high churn + bug-fix commits combined. <strong style="color:#f59e0b">Bugs only</strong> = low churn but frequently fixed.</p>
       <div class="churn-list" id="churn-list"></div>
+      <div id="churn-noise-note"></div>
       <div class="legend">
         <div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div>high churn + bugs</div>
         <div class="legend-item"><div class="legend-dot" style="background:#6366f1"></div>high churn</div>
@@ -223,6 +228,16 @@
     }).join('');
   }
   renderChurnList('churn-list');
+
+  var noiseNoteEl = document.getElementById('churn-noise-note');
+  if (noiseNoteEl && churn.filtered && churn.filtered.length) {
+    var n = churn.filtered.length;
+    var shown = churn.filtered.slice(0, 3).join(', ');
+    var extra = n > 3 ? ' +' + (n - 3) + ' more' : '';
+    noiseNoteEl.className = 'noise-note';
+    noiseNoteEl.innerHTML = n + ' noise file' + (n > 1 ? 's' : '') + ' hidden ('
+      + esc(shown) + extra + ') \u2014 rerun with <code>--all-files</code> to include.';
+  }
 
   function makeMomentumChart(id) {
     var ctx = document.getElementById(id);

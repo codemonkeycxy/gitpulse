@@ -34,6 +34,7 @@ async function main() {
     .option('--json', 'print JSON to stdout')
     .option('--since <date>', 'collect data since date', defaultSince)
     .option('--top <n>', 'number of top files to include', (value) => parseInt(value, 10), 20)
+    .option('--all-files', 'include noise files (lock files, go.sum, vendor/) in churn list')
     .parse(process.argv);
 
   const opts = program.opts();
@@ -60,7 +61,7 @@ async function main() {
   const outPath = opts.output
     ? path.resolve(opts.output)
     : path.join(process.cwd(), 'gitpulse-' + repoName + '.html');
-  const metricOptions = { since, top: opts.top };
+  const metricOptions = { since, top: opts.top, allFiles: opts.allFiles || false };
 
   const [
     churnData,
