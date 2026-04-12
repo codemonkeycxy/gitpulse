@@ -276,17 +276,12 @@
       : top1Pct;
     var concColor, concMsg;
     if (top1Pct >= 40) {
-      concColor = '#ef4444';
-      concMsg   = '\u26a0 ' + esc(top1.name) + ' holds ' + top1Pct + '% of commits';
+      concEl.style.color = '#ef4444';
+      concEl.textContent = '\u26a0 ' + esc(top1.name) + ' holds ' + top1Pct + '% of commits';
     } else if (top2Pct >= 60) {
-      concColor = '#f59e0b';
-      concMsg   = '\u26a0 Top 2 contributors hold ' + top2Pct + '% of commits';
-    } else {
-      concColor = '#22c55e';
-      concMsg   = 'Spread across ' + contributors.authors.length + ' contributors';
+      concEl.style.color = '#f59e0b';
+      concEl.textContent = '\u26a0 Top 2 contributors hold ' + top2Pct + '% of commits';
     }
-    concEl.style.color   = concColor;
-    concEl.textContent   = concMsg;
   }
 
   function ageClass(d) {
