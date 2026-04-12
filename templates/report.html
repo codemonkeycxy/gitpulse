@@ -14,9 +14,6 @@
   .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e293b; padding-bottom: 16px; margin-bottom: 24px; }
   .header h1 { font-size: 20px; font-weight: 700; color: #6366f1; letter-spacing: 1px; }
   .header .meta { color: #475569; font-size: 12px; margin-top: 2px; }
-  .header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
-  .toggle-btn { background: #1e293b; border: 1px solid #334155; color: #94a3b8; border-radius: 6px; padding: 6px 12px; font-size: 12px; cursor: pointer; }
-  .toggle-btn:hover { background: #334155; color: #e2e8f0; }
   .gen-date { color: #334155; font-size: 11px; }
 
   /* Section card */
@@ -78,23 +75,7 @@
   /* Empty state */
   .empty { color: #334155; font-size: 12px; text-align: center; padding: 24px 0; }
 
-  /* Grid view */
-  .grid-view { display: none; }
-  body.grid-mode .scrolling-view { display: none; }
-  body.grid-mode .grid-view      { display: block; }
 
-  .kpi-row    { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; }
-  .kpi-card   { background: #1e293b; border-radius: 8px; padding: 14px; text-align: center; }
-  .kpi-value  { font-size: 26px; font-weight: 700; line-height: 1; }
-  .kpi-label  { font-size: 9px; color: #475569; letter-spacing: 1px; text-transform: uppercase; margin-top: 4px; }
-  .kpi-red    { color: #ef4444; }
-  .kpi-green  { color: #22c55e; }
-  .kpi-amber  { color: #f59e0b; }
-
-  .grid-top    { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-  .grid-bottom { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-  .grid-card   { background: #1e293b; border-radius: 8px; padding: 14px; }
-  .grid-card .section-title { font-size: 9px; font-weight: 700; letter-spacing: 1.5px; color: #475569; text-transform: uppercase; display: block; margin-bottom: 10px; }
 </style>
 </head>
 <body>
@@ -108,15 +89,10 @@
       <h1>&#9889; GITPULSE</h1>
       <div class="meta" id="header-meta"></div>
     </div>
-    <div class="header-right">
-      <button class="toggle-btn" id="view-toggle">&#8862; Grid view</button>
-      <span class="gen-date" id="gen-date"></span>
-    </div>
+    <span class="gen-date" id="gen-date"></span>
   </div>
 
-  <!-- SCROLLING VIEW (default) -->
-  <div class="scrolling-view">
-    <div class="section">
+  <div class="section">
       <div class="section-header">
         <span class="section-title">&#9312; File Churn + Bug Hotspots</span>
         <span class="section-subtitle">where the team struggles most</span>
@@ -180,41 +156,6 @@
         <span id="ff-spikes"></span>
       </div>
     </div>
-  </div>
-
-  <!-- GRID VIEW -->
-  <div class="grid-view">
-    <div class="kpi-row">
-      <div class="kpi-card"><div class="kpi-value kpi-red"   id="kpi-hotfiles"></div><div class="kpi-label">hot files</div></div>
-      <div class="kpi-card"><div class="kpi-value kpi-red"   id="kpi-busfactor"></div><div class="kpi-label">bus factor</div></div>
-      <div class="kpi-card"><div class="kpi-value kpi-green" id="kpi-momentum"></div><div class="kpi-label">momentum</div></div>
-      <div class="kpi-card"><div class="kpi-value kpi-amber" id="kpi-silos"></div><div class="kpi-label">silos</div></div>
-    </div>
-    <div class="grid-top">
-      <div class="grid-card">
-        <span class="section-title">File Churn + Bug Hotspots</span>
-        <div id="grid-churn-list"></div>
-      </div>
-      <div class="grid-card">
-        <span class="section-title">Project Momentum</span>
-        <div style="position:relative;height:120px"><canvas id="chart-momentum-grid"></canvas></div>
-      </div>
-    </div>
-    <div class="grid-bottom">
-      <div class="grid-card">
-        <span class="section-title">Contributors</span>
-        <div style="position:relative;height:110px"><canvas id="chart-contributors-grid"></canvas></div>
-      </div>
-      <div class="grid-card">
-        <span class="section-title">Knowledge Silos</span>
-        <div id="grid-silos-list" style="font-size:11px"></div>
-      </div>
-      <div class="grid-card">
-        <span class="section-title">Firefighting</span>
-        <div style="position:relative;height:110px"><canvas id="chart-firefighting-grid"></canvas></div>
-      </div>
-    </div>
-  </div>
 
 </div>
 
@@ -237,28 +178,14 @@
   document.getElementById('gen-date').textContent =
     'generated ' + new Date(meta.generatedAt).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
 
-  var toggleBtn = document.getElementById('view-toggle');
-  if (localStorage.getItem('gitpulse-view') === 'grid') document.body.classList.add('grid-mode');
-  function syncLabel() {
-    toggleBtn.textContent = document.body.classList.contains('grid-mode') ? '\u2630 Scrolling view' : '\u229e Grid view';
-  }
-  syncLabel();
-  toggleBtn.addEventListener('click', function () {
-    document.body.classList.toggle('grid-mode');
-    localStorage.setItem('gitpulse-view', document.body.classList.contains('grid-mode') ? 'grid' : 'scrolling');
-    syncLabel();
-    Object.keys(charts).forEach(function (k) { if (charts[k]) charts[k].resize(); });
-  });
-
   var charts = {};
 
-  function renderChurnList(id, limit) {
+  function renderChurnList(id) {
     var el = document.getElementById(id);
     if (!el) return;
-    var files = limit ? churn.files.slice(0, limit) : churn.files;
-    if (!files.length) { el.innerHTML = '<div class="empty">No churn data</div>'; return; }
+    if (!churn.files.length) { el.innerHTML = '<div class="empty">No churn data</div>'; return; }
     var max = churn.files[0].changes;
-    el.innerHTML = files.map(function (f) {
+    el.innerHTML = churn.files.map(function (f) {
       var pct   = Math.round(f.changes / max * 100);
       var color = { danger: COLORS.danger, churn: COLORS.churn, bugs: COLORS.bugs }[f.category];
       var badge = f.category === 'danger' ? '<span class="badge badge-danger">&#128293; hotspot</span>'
@@ -269,8 +196,6 @@
     }).join('');
   }
   renderChurnList('churn-list');
-  renderChurnList('grid-churn-list', 5);
-  document.getElementById('kpi-hotfiles').textContent = churn.files.filter(function (f) { return f.category === 'danger'; }).length;
 
   function makeMomentumChart(id) {
     var ctx = document.getElementById(id);
@@ -284,8 +209,7 @@
         scales: { x: { ticks: { color: '#475569', maxRotation: 0, autoSkip: true, maxTicksLimit: 6 }, grid: { color: '#1a2535' } }, y: { ticks: { color: '#475569' }, grid: { color: '#1a2535' }, beginAtZero: true } } },
     });
   }
-  charts.momentum     = makeMomentumChart('chart-momentum');
-  charts.momentumGrid = makeMomentumChart('chart-momentum-grid');
+  charts.momentum = makeMomentumChart('chart-momentum');
 
   if (momentum.months.length) {
     var n = momentum.months.length;
@@ -296,9 +220,8 @@
     var avgAll = Math.round(momentum.counts.reduce(function (a, b) { return a + b; }, 0) / n);
     var last3c = momentum.counts.slice(-3);
     var avgLast3 = Math.round(last3c.reduce(function (a, b) { return a + b; }, 0) / last3c.length);
-    document.getElementById('momentum-avg').textContent    = avgAll    + ' commits/mo avg';
-    document.getElementById('momentum-recent').textContent = avgLast3  + ' commits/mo (last 3mo)';
-    document.getElementById('kpi-momentum').textContent    = momentum.trend === 'growing' ? '\u2191' : momentum.trend === 'declining' ? '\u2193' : '\u2192';
+    document.getElementById('momentum-avg').textContent    = avgAll   + ' commits/mo avg';
+    document.getElementById('momentum-recent').textContent = avgLast3 + ' commits/mo (last 3mo)';
   }
 
   function makeContributorsChart(id) {
@@ -312,8 +235,7 @@
       options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { display: false } } },
     });
   }
-  charts.contributors     = makeContributorsChart('chart-contributors');
-  charts.contributorsGrid = makeContributorsChart('chart-contributors-grid');
+  charts.contributors = makeContributorsChart('chart-contributors');
 
   var legendEl = document.getElementById('contributors-legend');
   if (legendEl && contributors.authors.length) {
@@ -327,7 +249,6 @@
   if (bf > 2) document.getElementById('bus-badge').classList.add('ok');
   document.getElementById('bus-num').textContent  = bf || '\u2014';
   document.getElementById('bus-risk').textContent = bf <= 2 ? 'high risk' : 'healthy';
-  document.getElementById('kpi-busfactor').textContent = bf || '\u2014';
 
   function ageClass(d) {
     var mo = (Date.now() - new Date(d)) / (1000 * 60 * 60 * 24 * 30);
@@ -342,13 +263,6 @@
           }).join('') + '</tbody></table>'
       : '<div class="empty">No knowledge silos detected</div>';
   }
-  var gridSilosEl = document.getElementById('grid-silos-list');
-  if (gridSilosEl) {
-    gridSilosEl.innerHTML = silos.files.slice(0, 5).map(function (f) {
-      return '<div style="margin-bottom:4px;color:#94a3b8;font-family:monospace">' + f.path.split('/').pop() + ' <span style="color:#6366f1">' + f.owner + '</span></div>';
-    }).join('') || '<div class="empty" style="padding:8px 0">None detected</div>';
-  }
-  document.getElementById('kpi-silos').textContent = silos.files.length;
 
   function makeFirefightingChart(id) {
     var ctx = document.getElementById(id);
@@ -367,8 +281,7 @@
         scales: { x: { ticks: { color: '#475569', maxRotation: 0, autoSkip: true, maxTicksLimit: 6 }, grid: { color: '#1a2535' } }, y: { ticks: { color: '#475569' }, grid: { color: '#1a2535' }, beginAtZero: true } } },
     });
   }
-  charts.firefighting     = makeFirefightingChart('chart-firefighting');
-  charts.firefightingGrid = makeFirefightingChart('chart-firefighting-grid');
+  charts.firefighting = makeFirefightingChart('chart-firefighting');
 
   if (firefighting.months.length) {
     document.getElementById('ff-avg').textContent    = firefighting.average.toFixed(1) + ' incidents/mo avg';
