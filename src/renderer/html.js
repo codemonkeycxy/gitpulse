@@ -15,8 +15,8 @@ function render(data) {
   let html      = fs.readFileSync(TEMPLATE_PATH, 'utf8');
   const chartJs = fs.readFileSync(CHARTJS_PATH, 'utf8');
 
-  html = html.replace('__CHARTJS_CODE__', chartJs);
-  html = html.replace('"__GITPULSE_DATA__"', JSON.stringify(data));
+  html = html.replace('__CHARTJS_CODE__', () => chartJs);
+  html = html.replace('"__GITPULSE_DATA__"', () => JSON.stringify(data));
 
   return html;
 }

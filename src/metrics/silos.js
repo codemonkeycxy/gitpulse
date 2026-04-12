@@ -14,9 +14,12 @@ async function collect(repoPath, { since }) {
 
   if (uniqueFiles.length === 0) return { files: [] };
 
+  // Cap at 500 files to bound execution time on very large repos
+  const filesToCheck = uniqueFiles.slice(0, 500);
+
   const silos = [];
 
-  for (const file of uniqueFiles) {
+  for (const file of filesToCheck) {
     const logOut = await git.run(
       ['log', '--since=' + since, '--format=%an|%ad', '--date=format:%Y-%m-%d', '--', file],
       repoPath
