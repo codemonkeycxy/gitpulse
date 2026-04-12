@@ -13,9 +13,10 @@ function monthRange(from, to) {
   return months;
 }
 
-// Match on subject line only (not PR description body) to avoid false positives
-// like "incident management tooling" in commit body text.
-const FIREFIGHTING_RE = /\b(revert|hotfix|rollback)/i;
+// Match on subject line only; anchored to start to avoid mid-sentence matches.
+// Double-reverts (Revert "Revert ...") are restoration work, not firefighting.
+const FIREFIGHTING_RE    = /^(revert|hotfix|rollback)\b/i;
+const DOUBLE_REVERT_RE   = /^revert\s+['"]?revert\b/i;
 
 async function collect(repoPath, { since }) {
   const output = await git.run(
@@ -31,7 +32,7 @@ async function collect(repoPath, { since }) {
       const i2 = line.indexOf('\t', i1 + 1);
       return { hash: line.slice(0, i1), month: line.slice(i1 + 1, i2), subject: line.slice(i2 + 1) };
     })
-    .filter(c => FIREFIGHTING_RE.test(c.subject));
+    .filter(c => FIREFIGHTING_RE.test(c.subject) && !DOUBLE_REVERT_RE.test(c.subject));
 
   if (commits.length === 0) return { months: [], counts: [], average: 0, spikes: [], commits: [] };
 

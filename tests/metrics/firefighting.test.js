@@ -39,10 +39,20 @@ describe('firefighting.collect', () => {
     expect(result.spikes).not.toContain('2025-04');
   });
 
-  test('filters out commits that only match in the PR body, not the subject', async () => {
-    // "incident" in body would have matched the old --grep; subject-only filter drops it
+  test('filters out commits where the keyword appears mid-sentence, not at the start', async () => {
     git.run.mockReturnValue(
-      'h1\t2025-04\trevert auth change\nh2\t2025-04\tMove RPCs to incident management group\n'
+      'h1\t2025-04\trevert auth change\nh2\t2025-04\tfix: also rollback temp flag\nh3\t2025-04\tMove RPCs to incident management group\n'
+    );
+    const result = await collect(REPO, OPTS);
+    expect(result.commits).toHaveLength(1);
+    expect(result.commits[0].subject).toBe('revert auth change');
+  });
+
+  test('excludes double-reverts (revert of a revert is restoration, not firefighting)', async () => {
+    git.run.mockReturnValue(
+      'h1\t2025-04\trevert auth change\n' +
+      'h2\t2025-04\tRevert "Revert "fix: MaxDeletions enforcement (#11356)""\n' +
+      "h3\t2025-04\trevert 'revert bad deploy'\n"
     );
     const result = await collect(REPO, OPTS);
     expect(result.commits).toHaveLength(1);
