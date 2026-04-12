@@ -10,7 +10,7 @@ describe('git.isGitRepo', () => {
     expect(execFileSync).toHaveBeenCalledWith(
       'git',
       ['rev-parse', '--git-dir'],
-      { cwd: '/some/repo', stdio: 'pipe', encoding: 'utf8' }
+      expect.objectContaining({ cwd: '/some/repo', stdio: 'pipe', encoding: 'utf8' })
     );
   });
 
@@ -40,7 +40,7 @@ describe('git.run', () => {
     expect(execFileSync).toHaveBeenCalledWith(
       'git',
       ['log', '--oneline'],
-      { cwd: '/some/repo', encoding: 'utf8', stdio: 'pipe' }
+      expect.objectContaining({ cwd: '/some/repo', encoding: 'utf8', stdio: 'pipe' })
     );
   });
 

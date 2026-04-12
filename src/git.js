@@ -2,7 +2,8 @@
 
 const { execFileSync } = require('child_process');
 
-const OPTS = (cwd) => ({ cwd, encoding: 'utf8', stdio: 'pipe' });
+const MAX_BUFFER = 200 * 1024 * 1024; // 200MB — handles large repo histories
+const OPTS = (cwd) => ({ cwd, encoding: 'utf8', stdio: 'pipe', maxBuffer: MAX_BUFFER });
 
 function run(args, repoPath) {
   return execFileSync('git', args, OPTS(repoPath));
