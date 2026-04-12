@@ -21,14 +21,6 @@ async function collect(repoPath, { since }) {
 
   const total = parsed.reduce((s, a) => s + a.commits, 0);
 
-  let cumulative = 0;
-  let busFactor  = 0;
-  for (const author of parsed) {
-    cumulative += author.commits;
-    busFactor++;
-    if (cumulative / total >= 0.8) break;
-  }
-
   const TOP = 10;
   const authors = parsed.length <= TOP
     ? parsed
@@ -37,7 +29,7 @@ async function collect(repoPath, { since }) {
         { name: 'others', commits: parsed.slice(TOP).reduce((s, a) => s + a.commits, 0) },
       ];
 
-  return { authors, total, busFactor };
+  return { authors, total };
 }
 
 module.exports = { collect };

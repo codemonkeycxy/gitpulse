@@ -45,13 +45,7 @@
   .legend-color { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }
   .legend-name  { flex: 1; color: #e2e8f0; }
   .legend-pct   { color: #64748b; font-size: 11px; }
-  .bus-badge    { text-align: center; background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.3); border-radius: 8px; padding: 12px 16px; min-width: 80px; }
-  .bus-badge.ok { background: rgba(34,197,94,.1); border-color: rgba(34,197,94,.3); }
-  .bus-num      { font-size: 28px; font-weight: 700; color: #ef4444; line-height: 1; }
-  .bus-badge.ok .bus-num { color: #22c55e; }
-  .bus-label    { font-size: 10px; color: #64748b; margin-top: 4px; }
-  .bus-risk     { font-size: 10px; color: #ef4444; margin-top: 2px; }
-  .bus-badge.ok .bus-risk { color: #22c55e; }
+  .concentration { font-size: 11px; font-weight: 600; margin-top: 10px; }
 
   /* Silos table */
   .silos-table    { width: 100%; border-collapse: collapse; font-size: 12px; }
@@ -134,16 +128,14 @@
     <div class="section">
       <div class="section-header">
         <span class="section-title">&#9314; Contributor Distribution</span>
-        <span class="section-subtitle">bus factor risk</span>
+        <span class="section-subtitle">knowledge concentration</span>
       </div>
-      <p class="section-hint">Slice size = share of total commits. Bus factor = minimum number of people whose absence would leave the team without 80% of commit knowledge. 1&ndash;2 = high risk.</p>
+      <p class="section-hint">Slice size = share of total commits. A dominant slice means knowledge is concentrated — if that person left, much of the commit history context leaves with them.</p>
       <div class="contributors-layout">
         <div class="donut-wrap"><canvas id="chart-contributors"></canvas></div>
-        <div class="legend-list" id="contributors-legend"></div>
-        <div class="bus-badge" id="bus-badge">
-          <div class="bus-num" id="bus-num"></div>
-          <div class="bus-label">bus factor</div>
-          <div class="bus-risk" id="bus-risk"></div>
+        <div style="flex:1">
+          <div class="legend-list" id="contributors-legend"></div>
+          <div class="concentration" id="contributors-concentration"></div>
         </div>
       </div>
     </div>
@@ -273,10 +265,27 @@
       return '<div class="legend-row"><div class="legend-color" style="background:' + color + '"></div><div class="legend-name">' + esc(a.name) + '</div><div class="legend-pct">' + pct + '%</div></div>';
     }).join('');
   }
-  var bf = contributors.busFactor;
-  if (bf > 2) document.getElementById('bus-badge').classList.add('ok');
-  document.getElementById('bus-num').textContent  = bf || '\u2014';
-  document.getElementById('bus-risk').textContent = bf <= 2 ? 'high risk' : 'healthy';
+  var concEl = document.getElementById('contributors-concentration');
+  if (concEl && contributors.authors.length) {
+    var top1    = contributors.authors[0];
+    var top1Pct = Math.round(top1.commits / contributors.total * 100);
+    var top2Pct = contributors.authors.length > 1
+      ? Math.round((top1.commits + contributors.authors[1].commits) / contributors.total * 100)
+      : top1Pct;
+    var concColor, concMsg;
+    if (top1Pct >= 40) {
+      concColor = '#ef4444';
+      concMsg   = '\u26a0 ' + esc(top1.name) + ' holds ' + top1Pct + '% of commits';
+    } else if (top2Pct >= 60) {
+      concColor = '#f59e0b';
+      concMsg   = '\u26a0 Top 2 contributors hold ' + top2Pct + '% of commits';
+    } else {
+      concColor = '#22c55e';
+      concMsg   = 'Spread across ' + contributors.authors.length + ' contributors';
+    }
+    concEl.style.color   = concColor;
+    concEl.textContent   = concMsg;
+  }
 
   function ageClass(d) {
     var mo = (Date.now() - new Date(d)) / (1000 * 60 * 60 * 24 * 30);

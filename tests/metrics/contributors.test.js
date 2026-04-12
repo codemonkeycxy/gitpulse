@@ -25,17 +25,6 @@ describe('contributors.collect', () => {
     expect(result.total).toBe(160);
   });
 
-  test('bus factor is authors needed to cover >= 80% of commits', async () => {
-    git.run.mockReturnValue(
-      Array(700).fill('Alice').join('\n') + '\n' +
-      Array(200).fill('Bob').join('\n') + '\n' +
-      Array(100).fill('Carol').join('\n') + '\n'
-    );
-
-    const result = await collect(REPO, OPTS);
-    expect(result.busFactor).toBe(2);
-  });
-
   test('collapses authors beyond top 10 into others bucket', async () => {
     // Author0=100 commits, Author1=95, ..., Author11=45; top10 Others = Author10(50)+Author11(45)=95
     const lines = Array.from({ length: 12 }, (_, i) =>
@@ -55,6 +44,5 @@ describe('contributors.collect', () => {
     const result = await collect(REPO, OPTS);
     expect(result.authors).toEqual([]);
     expect(result.total).toBe(0);
-    expect(result.busFactor).toBe(0);
   });
 });
