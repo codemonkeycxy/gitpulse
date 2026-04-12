@@ -18,11 +18,11 @@ function countLines(output) {
  * @returns {Promise<{ files: Array<{path,changes,bugFixes,category}> }>}
  */
 async function collect(repoPath, { since, top = 20 }) {
-  const churnOut = git.run(
+  const churnOut = await git.run(
     ['log', `--since=${since}`, '--name-only', '--format=', '--diff-filter=ACDMRT'],
     repoPath
   );
-  const bugOut = git.run(
+  const bugOut = await git.run(
     ['log', `--since=${since}`, '-E', '--grep=fix|bug|patch|issue|broken', '-i', '--name-only', '--format='],
     repoPath
   );
