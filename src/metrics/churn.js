@@ -28,23 +28,18 @@ function countLines(output) {
 }
 
 /**
- * Collect file churn and bug hotspot data.
+ * Collect file churn data.
  * @param {string} repoPath
- * @param {{ since: string, top?: number }} options
- * @returns {Promise<{ files: Array<{path,changes,bugFixes,category}> }>}
+ * @param {{ since: string, top?: number, allFiles?: boolean }} options
+ * @returns {Promise<{ files: Array<{path, changes}>, filtered: string[] }>}
  */
 async function collect(repoPath, { since, top = 20, allFiles = false }) {
   const churnOut = await git.run(
     ['log', `--since=${since}`, '--name-only', '--format=', '--diff-filter=ACDMRT'],
     repoPath
   );
-  const bugOut = await git.run(
-    ['log', `--since=${since}`, '-E', '--grep=fix|bug|patch|issue|broken', '-i', '--name-only', '--format='],
-    repoPath
-  );
 
   const churnMap = countLines(churnOut);
-  const bugMap   = countLines(bugOut);
 
   // Strip noise files unless the caller asked for everything.
   // Track which ones were removed so the report can show a note.
@@ -53,35 +48,15 @@ async function collect(repoPath, { since, top = 20, allFiles = false }) {
     for (const [path, changes] of churnMap) {
       if (isNoise(path)) { filtered.push({ path, changes }); churnMap.delete(path); }
     }
-    for (const path of bugMap.keys()) {
-      if (isNoise(path)) bugMap.delete(path);
-    }
     filtered.sort((a, b) => b.changes - a.changes);
   }
 
-  const sorted   = [...churnMap.entries()].sort((a, b) => b[1] - a[1]);
-  const topFiles = sorted.slice(0, top);
-  const topPaths = new Set(topFiles.map(([p]) => p));
-
-  const files = topFiles.map(([path, changes]) => ({
-    path,
-    changes,
-    bugFixes: bugMap.get(path) ?? 0,
-    category: (bugMap.get(path) ?? 0) > 0 ? 'danger' : 'churn',
-  }));
-
-  const extras = [...bugMap.entries()]
-    .filter(([path, count]) => !topPaths.has(path) && count >= 3)
+  const files = [...churnMap.entries()]
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
-    .map(([path, bugFixes]) => ({
-      path,
-      changes: churnMap.get(path) ?? 0,
-      bugFixes,
-      category: 'bugs',
-    }));
+    .slice(0, top)
+    .map(([path, changes]) => ({ path, changes }));
 
-  return { files: [...files, ...extras], filtered: filtered.map(f => f.path) };
+  return { files, filtered: filtered.map(f => f.path) };
 }
 
 module.exports = { collect };

@@ -29,12 +29,6 @@
   .churn-track { flex: 0 0 140px; background: #0f172a; border-radius: 3px; height: 10px; }
   .churn-fill  { height: 10px; border-radius: 3px; }
   .churn-count { width: 36px; text-align: right; font-size: 11px; color: #475569; flex-shrink: 0; }
-  .badge { display: inline-block; border-radius: 4px; padding: 1px 6px; font-size: 10px; font-weight: 600; margin-left: 4px; }
-  .badge-danger { background: rgba(239,68,68,.15); color: #ef4444; }
-  .badge-bugs   { background: rgba(245,158,11,.15); color: #f59e0b; }
-  .legend { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
-  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #64748b; }
-  .legend-dot  { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
 
   /* Momentum */
   .momentum-meta  { display: flex; justify-content: space-between; font-size: 11px; color: #475569; margin-bottom: 6px; }
@@ -112,17 +106,12 @@
 
   <div class="section">
       <div class="section-header">
-        <span class="section-title">&#9312; File Churn + Bug Hotspots</span>
-        <span class="section-subtitle">where the team struggles most</span>
+        <span class="section-title">&#9312; File Churn</span>
+        <span class="section-subtitle">most changed files</span>
       </div>
-      <p class="section-hint">Bar width = number of commits touching the file. <strong style="color:#ef4444">Hotspot</strong> = high churn + bug-fix commits combined. <strong style="color:#f59e0b">Bugs only</strong> = low churn but frequently fixed.</p>
+      <p class="section-hint">Bar width = number of commits touching the file in the analysis window.</p>
       <div class="churn-list" id="churn-list"></div>
       <div id="churn-noise-note"></div>
-      <div class="legend">
-        <div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div>high churn + bugs</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#6366f1"></div>high churn</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#f59e0b"></div>bug-prone, low churn</div>
-      </div>
     </div>
 
     <div class="section">
@@ -218,13 +207,10 @@
     if (!churn.files.length) { el.innerHTML = '<div class="empty">No churn data</div>'; return; }
     var max = churn.files[0].changes;
     el.innerHTML = churn.files.map(function (f) {
-      var pct   = Math.round(f.changes / max * 100);
-      var color = { danger: COLORS.danger, churn: COLORS.churn, bugs: COLORS.bugs }[f.category];
-      var badge = f.category === 'danger' ? '<span class="badge badge-danger">&#128293; hotspot</span>'
-                : f.category === 'bugs'   ? '<span class="badge badge-bugs">&#9888; bugs only</span>' : '';
+      var pct = Math.round(f.changes / max * 100);
       return '<div class="churn-row"><div class="churn-label" title="' + esc(f.path) + '">' + esc(f.path) + '</div>'
-        + '<div class="churn-track"><div class="churn-fill" style="background:' + color + ';width:' + pct + '%"></div></div>'
-        + '<div class="churn-count">' + f.changes + '</div>' + badge + '</div>';
+        + '<div class="churn-track"><div class="churn-fill" style="background:' + COLORS.churn + ';width:' + pct + '%"></div></div>'
+        + '<div class="churn-count">' + f.changes + '</div></div>';
     }).join('');
   }
   renderChurnList('churn-list');
