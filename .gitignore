@@ -1,4 +1,5 @@
 node_modules/
+.npm_tmp/
 *.html
 !templates/report.html
 .DS_Store
