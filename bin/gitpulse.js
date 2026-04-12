@@ -43,10 +43,17 @@ async function main() {
   const since = opts.since;
   const shouldOpen = opts.open !== false;
 
-  execFileSync('git', ['--version'], { encoding: 'utf8', stdio: 'pipe' });
+  try {
+    execFileSync('git', ['--version'], { stdio: 'pipe' });
+  } catch {
+    console.error('✖ git is not installed or not in PATH.');
+    console.error('  Install git: https://git-scm.com/downloads');
+    process.exit(1);
+  }
 
   if (!git.isGitRepo(repoPath)) {
-    throw new Error(`Not a git repository: ${repoPath}`);
+    console.error(`✖ Not a git repository: ${repoPath}`);
+    process.exit(1);
   }
 
   const rootPath = git.getGitRoot(repoPath);
@@ -89,6 +96,8 @@ async function main() {
   }
 
   fs.writeFileSync(outPath, render(data), 'utf8');
+
+  console.log(`✔ Report saved to ${outPath}${shouldOpen ? ' (opening in browser…)' : ''}`);
 
   if (shouldOpen) {
     const { default: open } = await import('open');
