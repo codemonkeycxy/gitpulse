@@ -34,6 +34,10 @@ npx gitpulse ./path/to/repo
 | `--no-open` | — | Don't auto-open the report in the browser |
 | `--json` | — | Output raw collected data as JSON |
 
+## Inspiration
+
+The core insight — that you can understand a codebase's health before reading a single line of code — comes from [*Git Commands I Use Before Reading Code*](https://piechowski.io/post/git-commands-before-reading-code/) by Grzegorz Piechowski. gitpulse automates those ideas and packages them into a visual dashboard.
+
 ## License
 
 MIT
