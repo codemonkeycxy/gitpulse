@@ -1,0 +1,5 @@
+node_modules/
+*.html
+!templates/report.html
+.DS_Store
+.superpowers/
