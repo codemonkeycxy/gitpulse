@@ -10,8 +10,11 @@
 # Run from inside any repo — zero install required
 npx @codemonkeycxy/gitpulse
 
-# Or point at a path
+# Point at a local path
 npx @codemonkeycxy/gitpulse ./path/to/repo
+
+# Point at a GitHub URL (shallow-clones automatically)
+npx @codemonkeycxy/gitpulse https://github.com/owner/repo
 
 # Skip auto-opening the browser
 npx @codemonkeycxy/gitpulse --no-open
@@ -21,17 +24,17 @@ npx @codemonkeycxy/gitpulse --no-open
 
 | Section | What it shows |
 |---|---|
-| **File Churn + Bug Hotspots** | Top changed files, color-coded by risk (churn + bugs = danger zone) |
+| **File Churn** | Top changed files by commit count in the analysis window |
 | **Project Momentum** | Monthly commit trend — growing, declining, or stable |
-| **Contributor Distribution** | Who owns what, and your bus factor risk |
-| **Knowledge Silos** | Files only one person has touched in the analysis window |
-| **Firefighting Frequency** | Reverts, hotfixes, and rollback frequency with spike detection |
+| **Contributor Distribution** | Commit share per author; warns when knowledge is dangerously concentrated |
+| **Knowledge Silos** | Files only one person has touched, grouped by sole owner |
+| **Firefighting Frequency** | Reverts, hotfixes, and rollbacks per month with spike detection |
 
 ## Options
 
 | Flag | Default | Description |
 |---|---|---|
-| `--output <file>` | `gitpulse-report.html` | Output file path |
+| `--output <file>` | `gitpulse-<repo>.html` | Output file path |
 | `--since <date>` | 1 year ago | Analyse commits since this date (YYYY-MM-DD) |
 | `--top <n>` | `20` | Number of files in the churn section |
 | `--no-open` | — | Don't auto-open the report in the browser |
