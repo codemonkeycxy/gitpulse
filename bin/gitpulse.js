@@ -13,6 +13,25 @@ const silos = require('../src/metrics/silos');
 const firefighting = require('../src/metrics/firefighting');
 const { render } = require('../src/renderer/html');
 
+// Minimal TTY spinner — no extra dependencies.
+// Returns a stop() function that clears the line so the next console.log is clean.
+function startSpinner(msg) {
+  if (!process.stdout.isTTY) {
+    process.stderr.write(msg + '\n');
+    return () => {};
+  }
+  const frames = ['⠋','⠙','⠹','⠸','⠼','⠴','⠦','⠧','⠇','⠏'];
+  let i = 0;
+  process.stdout.write(frames[0] + ' ' + msg);
+  const id = setInterval(() => {
+    process.stdout.write('\r' + frames[++i % frames.length] + ' ' + msg);
+  }, 80);
+  return () => {
+    clearInterval(id);
+    process.stdout.write('\r' + ' '.repeat(msg.length + 2) + '\r');
+  };
+}
+
 function getDefaultSince() {
   const date = new Date();
   date.setFullYear(date.getFullYear() - 1);
@@ -63,6 +82,8 @@ async function main() {
     : path.join(process.cwd(), 'gitpulse-' + repoName + '.html');
   const metricOptions = { since, top: opts.top, allFiles: opts.allFiles || false };
 
+  const stopSpinner = startSpinner(`Analysing ${repoName}…`);
+
   const [
     churnData,
     momentumData,
@@ -76,6 +97,8 @@ async function main() {
     silos.collect(rootPath, metricOptions),
     firefighting.collect(rootPath, metricOptions),
   ]);
+
+  stopSpinner();
 
   const data = {
     meta: {
