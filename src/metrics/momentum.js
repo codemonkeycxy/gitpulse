@@ -21,7 +21,7 @@ function calcTrend(counts) {
   return 'stable';
 }
 async function collect(repoPath, { since }) {
-  const output = git.run(['log', '--since=' + since, '--format=%ad', '--date=format:%Y-%m', '--no-merges'], repoPath);
+  const output = await git.run(['log', `--since=${since}`, '--format=%ad', '--date=format:%Y-%m', '--no-merges'], repoPath);
   const raw = output.split('\n').map(l => l.trim()).filter(Boolean);
   if (raw.length === 0) return { months: [], counts: [], trend: 'stable' };
   const freq = new Map();
