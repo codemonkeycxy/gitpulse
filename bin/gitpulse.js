@@ -29,7 +29,7 @@ async function main() {
   program
     .name('gitpulse')
     .argument('[repo]', 'repo path', process.cwd())
-    .option('--output <file>', 'output file', 'gitpulse-report.html')
+    .option('--output <file>', 'output file (default: gitpulse-<repo>.html)')
     .option('--no-open', 'do not open the generated report')
     .option('--json', 'print JSON to stdout')
     .option('--since <date>', 'collect data since date', defaultSince)
@@ -39,7 +39,6 @@ async function main() {
   const opts = program.opts();
   const repoInput = program.args[0] || process.cwd();
   const repoPath = path.resolve(repoInput);
-  const outPath = path.resolve(opts.output);
   const since = opts.since;
   const shouldOpen = opts.open !== false;
 
@@ -58,6 +57,9 @@ async function main() {
 
   const rootPath = git.getGitRoot(repoPath);
   const repoName = path.basename(rootPath);
+  const outPath = opts.output
+    ? path.resolve(opts.output)
+    : path.join(process.cwd(), 'gitpulse-' + repoName + '.html');
   const metricOptions = { since, top: opts.top };
 
   const [
@@ -82,6 +84,7 @@ async function main() {
       sinceLabel: getSinceLabel(since, since === defaultSince),
       totalCommits: contributorsData.total,
       generatedAt: new Date().toISOString(),
+      githubUrl: git.getGithubUrl(rootPath),
     },
     churn: churnData,
     momentum: momentumData,

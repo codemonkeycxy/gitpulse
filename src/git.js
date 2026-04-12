@@ -22,4 +22,17 @@ function getGitRoot(repoPath) {
   return run(['rev-parse', '--show-toplevel'], repoPath).trim();
 }
 
-module.exports = { run, isGitRepo, getGitRoot };
+function getGithubUrl(repoPath) {
+  try {
+    const remote = execFileSync('git', ['remote', 'get-url', 'origin'], OPTS(repoPath)).trim();
+    // Handles https://github.com/owner/repo.git, git@github.com:owner/repo.git,
+    // and ssh://git@github.com/owner/repo.git
+    const match = remote.match(/github\.com[:/](.+?)(?:\.git)?$/);
+    if (!match) return null;
+    return 'https://github.com/' + match[1];
+  } catch {
+    return null;
+  }
+}
+
+module.exports = { run, isGitRepo, getGitRoot, getGithubUrl };

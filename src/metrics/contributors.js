@@ -3,21 +3,21 @@
 const git = require('../git');
 
 async function collect(repoPath, { since }) {
+  // git shortlog --since silently ignores the date filter in some git versions;
+  // use git log --format=%aN and aggregate manually instead.
   const output = await git.run(
-    ['shortlog', '-sn', '--no-merges', '--since=' + since],
+    ['log', '--format=%aN', '--no-merges', '--since=' + since],
     repoPath
   );
 
   const lines = output.split('\n').map(l => l.trim()).filter(Boolean);
   if (lines.length === 0) return { authors: [], total: 0, busFactor: 0 };
 
-  const parsed = lines.map(line => {
-    const tab = line.indexOf('\t');
-    return {
-      name:    line.slice(tab + 1).trim(),
-      commits: parseInt(line.slice(0, tab).trim(), 10),
-    };
-  }).sort((a, b) => b.commits - a.commits);
+  const freq = new Map();
+  for (const name of lines) freq.set(name, (freq.get(name) || 0) + 1);
+  const parsed = [...freq.entries()]
+    .map(([name, commits]) => ({ name, commits }))
+    .sort((a, b) => b.commits - a.commits);
 
   const total = parsed.reduce((s, a) => s + a.commits, 0);
 

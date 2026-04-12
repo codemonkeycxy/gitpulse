@@ -15,15 +15,22 @@ function monthRange(from, to) {
 
 async function collect(repoPath, { since }) {
   const output = await git.run(
-    ['log', '--since=' + since, '-E', '--grep=revert|hotfix|rollback|emergency|incident', '-i', '--format=%ad', '--date=format:%Y-%m', '--no-merges'],
+    ['log', '--since=' + since, '-E', '--grep=revert|hotfix|rollback|emergency|incident', '-i',
+     '--format=%H\t%ad\t%s', '--date=format:%Y-%m', '--no-merges'],
     repoPath
   );
 
   const raw = output.split('\n').map(l => l.trim()).filter(Boolean);
-  if (raw.length === 0) return { months: [], counts: [], average: 0, spikes: [] };
+  if (raw.length === 0) return { months: [], counts: [], average: 0, spikes: [], commits: [] };
+
+  const commits = raw.map(line => {
+    const i1 = line.indexOf('\t');
+    const i2 = line.indexOf('\t', i1 + 1);
+    return { hash: line.slice(0, i1), month: line.slice(i1 + 1, i2), subject: line.slice(i2 + 1) };
+  });
 
   const freq = new Map();
-  for (const m of raw) freq.set(m, (freq.get(m) || 0) + 1);
+  for (const c of commits) freq.set(c.month, (freq.get(c.month) || 0) + 1);
 
   const sorted = [...freq.keys()].sort();
   const months = monthRange(sorted[0], sorted[sorted.length - 1]);
@@ -32,7 +39,7 @@ async function collect(repoPath, { since }) {
   const average = counts.reduce((s, c) => s + c, 0) / counts.length;
   const spikes = months.filter((m, i) => counts[i] > average * 2);
 
-  return { months, counts, average, spikes };
+  return { months, counts, average, spikes, commits };
 }
 
 module.exports = { collect };

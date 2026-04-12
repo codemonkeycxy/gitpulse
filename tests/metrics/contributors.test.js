@@ -9,8 +9,13 @@ const OPTS = { since: '2025-04-11' };
 describe('contributors.collect', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  test('parses shortlog into authors sorted by commits desc', async () => {
-    git.run.mockReturnValue('  100\tAlice\n   50\tBob\n   10\tCarol\n');
+  test('parses log author names into authors sorted by commits desc', async () => {
+    // git log --format=%aN emits one author name per commit
+    git.run.mockReturnValue(
+      Array(100).fill('Alice').join('\n') + '\n' +
+      Array(50).fill('Bob').join('\n') + '\n' +
+      Array(10).fill('Carol').join('\n') + '\n'
+    );
 
     const result = await collect(REPO, OPTS);
 
@@ -21,15 +26,20 @@ describe('contributors.collect', () => {
   });
 
   test('bus factor is authors needed to cover >= 80% of commits', async () => {
-    git.run.mockReturnValue('  700\tAlice\n  200\tBob\n  100\tCarol\n');
+    git.run.mockReturnValue(
+      Array(700).fill('Alice').join('\n') + '\n' +
+      Array(200).fill('Bob').join('\n') + '\n' +
+      Array(100).fill('Carol').join('\n') + '\n'
+    );
 
     const result = await collect(REPO, OPTS);
     expect(result.busFactor).toBe(2);
   });
 
   test('collapses authors beyond top 10 into others bucket', async () => {
+    // Author0=100 commits, Author1=95, ..., Author11=45; top10 Others = Author10(50)+Author11(45)=95
     const lines = Array.from({ length: 12 }, (_, i) =>
-      '  ' + (100 - i * 5) + '\tAuthor' + i
+      Array(100 - i * 5).fill('Author' + i).join('\n')
     ).join('\n') + '\n';
     git.run.mockReturnValue(lines);
 

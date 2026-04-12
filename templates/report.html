@@ -71,6 +71,20 @@
 
   /* Firefighting */
   .ff-stats { display: flex; justify-content: space-between; margin-top: 8px; font-size: 11px; color: #475569; }
+  .ff-commits { margin-top: 10px; }
+  .ff-month-group { margin-bottom: 10px; }
+  .ff-month-label { font-size: 10px; color: #64748b; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 4px; }
+  .ff-commit-row { display: flex; align-items: baseline; gap: 8px; padding: 2px 0; font-size: 11px; }
+  .ff-commit-hash { color: #6366f1; font-family: monospace; flex-shrink: 0; text-decoration: none; }
+  .ff-commit-hash:hover { text-decoration: underline; }
+  .ff-commit-subject { color: #94a3b8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* Section hint */
+  .section-hint { font-size: 11px; color: #475569; margin-bottom: 12px; line-height: 1.6; }
+
+  /* Show more / toggle button */
+  .show-more-btn { background: none; border: 1px solid #334155; color: #64748b; border-radius: 4px; padding: 4px 10px; font-size: 11px; cursor: pointer; margin-top: 8px; }
+  .show-more-btn:hover { border-color: #475569; color: #94a3b8; }
 
   /* Empty state */
   .empty { color: #334155; font-size: 12px; text-align: center; padding: 24px 0; }
@@ -97,6 +111,7 @@
         <span class="section-title">&#9312; File Churn + Bug Hotspots</span>
         <span class="section-subtitle">where the team struggles most</span>
       </div>
+      <p class="section-hint">Bar width = number of commits touching the file. <strong style="color:#ef4444">Hotspot</strong> = high churn + bug-fix commits combined. <strong style="color:#f59e0b">Bugs only</strong> = low churn but frequently fixed.</p>
       <div class="churn-list" id="churn-list"></div>
       <div class="legend">
         <div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div>high churn + bugs</div>
@@ -110,6 +125,7 @@
         <span class="section-title">&#9313; Project Momentum</span>
         <span class="section-subtitle">team velocity over time</span>
       </div>
+      <p class="section-hint">Y-axis = commits per month. Trend (&#8593;/&#8595;/&#8594;) compares the last 3 months to the 3 months before that.</p>
       <div class="momentum-meta">
         <span id="momentum-since"></span>
         <span id="momentum-trend"></span>
@@ -126,6 +142,7 @@
         <span class="section-title">&#9314; Contributor Distribution</span>
         <span class="section-subtitle">bus factor risk</span>
       </div>
+      <p class="section-hint">Slice size = share of total commits. Bus factor = minimum number of people whose absence would leave the team without 80% of commit knowledge. 1&ndash;2 = high risk.</p>
       <div class="contributors-layout">
         <div class="donut-wrap"><canvas id="chart-contributors"></canvas></div>
         <div class="legend-list" id="contributors-legend"></div>
@@ -142,6 +159,7 @@
         <span class="section-title">&#9315; Knowledge Silos</span>
         <span class="section-subtitle">files touched by only one person</span>
       </div>
+      <p class="section-hint">Files touched by exactly one author in the window. Last-touched color: <span style="color:#ef4444">red</span> = 6+ months ago, <span style="color:#f59e0b">yellow</span> = 2&ndash;6 months, <span style="color:#22c55e">green</span> = recent.</p>
       <div id="silos-container"></div>
     </div>
 
@@ -150,10 +168,15 @@
         <span class="section-title">&#9316; Firefighting Frequency</span>
         <span class="section-subtitle">reverts, hotfixes &amp; rollbacks over time</span>
       </div>
+      <p class="section-hint">Commits whose message contains: revert, hotfix, rollback, emergency, or incident. Y-axis = count per month. Larger dots mark spike months (2&times; the average).</p>
       <div style="position:relative;height:120px"><canvas id="chart-firefighting"></canvas></div>
       <div class="ff-stats">
         <span id="ff-avg"></span>
         <span id="ff-spikes"></span>
+      </div>
+      <button class="show-more-btn" id="ff-toggle" style="display:none"></button>
+      <div id="ff-commits-wrap" style="display:none">
+        <div class="ff-commits" id="ff-commits"></div>
       </div>
     </div>
 
@@ -180,6 +203,10 @@
 
   var charts = {};
 
+  function esc(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
   function renderChurnList(id) {
     var el = document.getElementById(id);
     if (!el) return;
@@ -190,7 +217,7 @@
       var color = { danger: COLORS.danger, churn: COLORS.churn, bugs: COLORS.bugs }[f.category];
       var badge = f.category === 'danger' ? '<span class="badge badge-danger">&#128293; hotspot</span>'
                 : f.category === 'bugs'   ? '<span class="badge badge-bugs">&#9888; bugs only</span>' : '';
-      return '<div class="churn-row"><div class="churn-label" title="' + f.path + '">' + f.path + '</div>'
+      return '<div class="churn-row"><div class="churn-label" title="' + esc(f.path) + '">' + esc(f.path) + '</div>'
         + '<div class="churn-track"><div class="churn-fill" style="background:' + color + ';width:' + pct + '%"></div></div>'
         + '<div class="churn-count">' + f.changes + '</div>' + badge + '</div>';
     }).join('');
@@ -242,7 +269,7 @@
     legendEl.innerHTML = contributors.authors.slice(0, 8).map(function (a, i) {
       var color = a.name === 'others' ? COLORS.others : COLORS.palette[i % COLORS.palette.length];
       var pct   = Math.round(a.commits / contributors.total * 100);
-      return '<div class="legend-row"><div class="legend-color" style="background:' + color + '"></div><div class="legend-name">' + a.name + '</div><div class="legend-pct">' + pct + '%</div></div>';
+      return '<div class="legend-row"><div class="legend-color" style="background:' + color + '"></div><div class="legend-name">' + esc(a.name) + '</div><div class="legend-pct">' + pct + '%</div></div>';
     }).join('');
   }
   var bf = contributors.busFactor;
@@ -256,12 +283,32 @@
   }
   var silosEl = document.getElementById('silos-container');
   if (silosEl) {
-    silosEl.innerHTML = silos.files.length
-      ? '<table class="silos-table"><thead><tr><th>File</th><th>Sole owner</th><th>Last touched</th><th>Commits</th></tr></thead><tbody>'
-        + silos.files.map(function (f) {
-            return '<tr><td title="' + f.path + '">' + f.path + '</td><td class="owner-name">' + f.owner + '</td><td class="' + ageClass(f.lastTouched) + '">' + f.lastTouched + '</td><td>' + f.commits + '</td></tr>';
-          }).join('') + '</tbody></table>'
-      : '<div class="empty">No knowledge silos detected</div>';
+    if (!silos.files.length) {
+      silosEl.innerHTML = '<div class="empty">No knowledge silos detected</div>';
+    } else {
+      var SILOS_VISIBLE = 10;
+      var siloRow = function (f) {
+        return '<tr><td title="' + esc(f.path) + '">' + esc(f.path) + '</td>'
+          + '<td class="owner-name">' + esc(f.owner) + '</td>'
+          + '<td class="' + ageClass(f.lastTouched) + '">' + f.lastTouched + '</td>'
+          + '<td>' + f.commits + '</td></tr>';
+      };
+      var thead = '<table class="silos-table"><thead><tr><th>File</th><th>Sole owner</th><th>Last touched</th><th>Commits</th></tr></thead>';
+      silosEl.innerHTML = thead + '<tbody id="silos-body">'
+        + silos.files.slice(0, SILOS_VISIBLE).map(siloRow).join('')
+        + '</tbody></table>';
+      if (silos.files.length > SILOS_VISIBLE) {
+        var silosBtn = document.createElement('button');
+        silosBtn.className = 'show-more-btn';
+        silosBtn.textContent = 'Show ' + (silos.files.length - SILOS_VISIBLE) + ' more';
+        silosBtn.addEventListener('click', function () {
+          var tbody = document.getElementById('silos-body');
+          tbody.insertAdjacentHTML('beforeend', silos.files.slice(SILOS_VISIBLE).map(siloRow).join(''));
+          silosBtn.remove();
+        });
+        silosEl.appendChild(silosBtn);
+      }
+    }
   }
 
   function makeFirefightingChart(id) {
@@ -288,6 +335,38 @@
     document.getElementById('ff-spikes').textContent = firefighting.spikes.length
       ? '\u26a0 spike' + (firefighting.spikes.length > 1 ? 's' : '') + ' detected: ' + firefighting.spikes.join(', ')
       : 'no spikes detected';
+  }
+
+  var ffToggle = document.getElementById('ff-toggle');
+  var ffWrap   = document.getElementById('ff-commits-wrap');
+  if (firefighting.commits && firefighting.commits.length && ffToggle) {
+    ffToggle.style.display = 'inline-block';
+    ffToggle.textContent = 'Show ' + firefighting.commits.length + ' commits \u25be';
+    var byMonth = {};
+    firefighting.commits.forEach(function (c) {
+      if (!byMonth[c.month]) byMonth[c.month] = [];
+      byMonth[c.month].push(c);
+    });
+    var ffHtml = '';
+    Object.keys(byMonth).sort().reverse().forEach(function (month) {
+      ffHtml += '<div class="ff-month-group"><div class="ff-month-label">' + month + '</div>';
+      byMonth[month].forEach(function (c) {
+        var shortHash = c.hash.slice(0, 7);
+        var hashEl = meta.githubUrl
+          ? '<a class="ff-commit-hash" href="' + meta.githubUrl + '/commit/' + c.hash + '" target="_blank" rel="noopener">' + shortHash + '</a>'
+          : '<span class="ff-commit-hash">' + shortHash + '</span>';
+        ffHtml += '<div class="ff-commit-row">' + hashEl + '<span class="ff-commit-subject">' + esc(c.subject) + '</span></div>';
+      });
+      ffHtml += '</div>';
+    });
+    document.getElementById('ff-commits').innerHTML = ffHtml;
+    ffToggle.addEventListener('click', function () {
+      var open = ffWrap.style.display !== 'none';
+      ffWrap.style.display = open ? 'none' : 'block';
+      ffToggle.textContent = open
+        ? 'Show ' + firefighting.commits.length + ' commits \u25be'
+        : 'Hide commits \u25b4';
+    });
   }
 })();
 </script>
