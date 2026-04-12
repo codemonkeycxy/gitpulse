@@ -1,7 +1,7 @@
 {
   "name": "@codemonkeycxy/gitpulse",
   "version": "0.1.18",
-  "description": "Mine git history and generate a visual HTML repo health report",
+  "description": "A quick health check for any git repository, surfacing potential problem areas from commit history",
   "bin": {
     "gitpulse": "bin/gitpulse.js"
   },

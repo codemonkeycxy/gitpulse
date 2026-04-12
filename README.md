@@ -1,19 +1,19 @@
 # gitpulse
 
-> Mine git history. Understand any codebase before reading a single file.
+> A quick health check for any git repository.
 
-`gitpulse` analyses a git repository and generates a self-contained HTML health report — a dark analytics dashboard covering the five things that matter most when approaching an unfamiliar codebase.
+`gitpulse` analyses a git repository's commit history and generates a visual health report. Point it at any repo to get a quick read on potential problem areas like churn hotspots, knowledge silos, and firefighting patterns.
 
 ## Usage
 
 ```bash
-# Run from inside any repo — zero install required
+# Run from inside any repo
 npx @codemonkeycxy/gitpulse
 
 # Point at a local path
 npx @codemonkeycxy/gitpulse ./path/to/repo
 
-# Point at a GitHub URL (shallow-clones automatically)
+# Point at a GitHub URL
 npx @codemonkeycxy/gitpulse https://github.com/owner/repo
 
 # Skip auto-opening the browser
@@ -24,9 +24,9 @@ npx @codemonkeycxy/gitpulse --no-open
 
 | Section | What it shows |
 |---|---|
-| **File Churn** | Top changed files by commit count in the analysis window |
-| **Project Momentum** | Monthly commit trend — growing, declining, or stable |
-| **Contributor Distribution** | Commit share per author; warns when knowledge is dangerously concentrated |
+| **File Churn** | Most frequently changed files over the configured time range |
+| **Project Momentum** | Monthly commit trend (growing, declining, or stable) |
+| **Contributor Distribution** | Commit share per author; warns when knowledge is heavily concentrated in one person |
 | **Knowledge Silos** | Files only one person has touched, grouped by sole owner |
 | **Firefighting Frequency** | Reverts, hotfixes, and rollbacks per month with spike detection |
 
@@ -39,11 +39,11 @@ npx @codemonkeycxy/gitpulse --no-open
 | `--top <n>` | `20` | Number of files in the churn section |
 | `--no-open` | — | Don't auto-open the report in the browser |
 | `--json` | — | Output raw collected data as JSON |
-| `--all-files` | — | Include noise files (lock files, go.sum, vendor/) in the churn list |
+| `--all-files` | — | Include noise files (lock files, generated files, and vendor directories) in the churn list |
 
 ## Inspiration
 
-The core insight — that you can understand a codebase's health before reading a single line of code — comes from [*Git Commands I Use Before Reading Code*](https://piechowski.io/post/git-commands-before-reading-code/) by Grzegorz Piechowski. gitpulse automates those ideas and packages them into a visual dashboard.
+The core insight, that you can understand a codebase's health before reading a single line of code, comes from [*Git Commands I Use Before Reading Code*](https://piechowski.io/post/git-commands-before-reading-code/) by Grzegorz Piechowski. gitpulse automates those ideas.
 
 ## License
 
