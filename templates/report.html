@@ -145,7 +145,7 @@
         <span class="section-title">&#9315; Knowledge Silos</span>
         <span class="section-subtitle">files touched by only one person</span>
       </div>
-      <p class="section-hint">Files touched by exactly one author in the window.</p>
+      <p class="section-hint">Bar = number of files that person alone touched in the window. Expand to browse individual files.</p>
       <div id="silos-container"></div>
     </div>
 
@@ -154,7 +154,7 @@
         <span class="section-title">&#9316; Firefighting Frequency</span>
         <span class="section-subtitle">reverts, hotfixes &amp; rollbacks over time</span>
       </div>
-      <p class="section-hint">Commits whose subject line starts with revert, hotfix, or rollback. Y-axis = count per month. Larger dots mark spike months (2&times; the average).</p>
+      <p class="section-hint">Commits whose subject line starts with revert, hotfix, or rollback. Y-axis = count per month.<span id="ff-spike-hint"> Larger dots mark spike months (2&times; the average).</span></p>
       <div style="position:relative;height:120px"><canvas id="chart-firefighting"></canvas></div>
       <div class="ff-stats">
         <span id="ff-avg"></span>
@@ -293,32 +293,44 @@
     if (!silos.files.length) {
       silosEl.innerHTML = '<div class="empty">No knowledge silos detected</div>';
     } else {
-      var SILOS_VISIBLE = 10;
+      var ownerCounts = {};
+      silos.files.forEach(function (f) { ownerCounts[f.owner] = (ownerCounts[f.owner] || 0) + 1; });
+      var ownersSorted = Object.keys(ownerCounts)
+        .map(function (name) { return { name: name, count: ownerCounts[name] }; })
+        .sort(function (a, b) { return b.count - a.count; });
+      var maxCount = ownersSorted[0].count;
+      silosEl.innerHTML = '<div class="churn-list" style="margin-bottom:10px">'
+        + ownersSorted.map(function (o) {
+            var pct = Math.round(o.count / maxCount * 100);
+            return '<div class="churn-row">'
+              + '<div class="churn-label owner-name">' + esc(o.name) + '</div>'
+              + '<div class="churn-track"><div class="churn-fill" style="background:#6366f1;width:' + pct + '%"></div></div>'
+              + '<div class="churn-count">' + o.count + '</div></div>';
+          }).join('')
+        + '</div>';
       var siloRow = function (f) {
         return '<tr><td title="' + esc(f.path) + '">' + esc(f.path) + '</td>'
           + '<td class="owner-name">' + esc(f.owner) + '</td>'
           + '<td class="' + ageClass(f.lastTouched) + '">' + f.lastTouched + '</td>'
           + '<td>' + f.commits + '</td></tr>';
       };
-      var thead = '<table class="silos-table"><thead><tr><th>File</th><th>Sole owner</th><th>Last touched</th><th>Commits</th></tr></thead>';
-      silosEl.innerHTML = thead + '<tbody id="silos-body">'
-        + silos.files.slice(0, SILOS_VISIBLE).map(siloRow).join('')
-        + '</tbody></table>';
-      if (silos.files.length > SILOS_VISIBLE) {
-        var silosExpanded = false;
-        var silosBtn = document.createElement('button');
-        silosBtn.className = 'show-more-btn';
-        silosBtn.textContent = 'Show ' + (silos.files.length - SILOS_VISIBLE) + ' more \u25be';
-        silosBtn.addEventListener('click', function () {
-          silosExpanded = !silosExpanded;
-          document.getElementById('silos-body').innerHTML =
-            silos.files.slice(0, silosExpanded ? silos.files.length : SILOS_VISIBLE).map(siloRow).join('');
-          silosBtn.textContent = silosExpanded
-            ? 'Show less \u25b4'
-            : 'Show ' + (silos.files.length - SILOS_VISIBLE) + ' more \u25be';
-        });
-        silosEl.appendChild(silosBtn);
-      }
+      var filesShown = false;
+      var filesBtn = document.createElement('button');
+      filesBtn.className = 'show-more-btn';
+      filesBtn.textContent = 'Show all ' + silos.files.length + ' files \u25be';
+      silosEl.appendChild(filesBtn);
+      var tableWrap = document.createElement('div');
+      tableWrap.style.display = 'none';
+      tableWrap.innerHTML = '<table class="silos-table"><thead><tr><th>File</th><th>Sole owner</th><th>Last touched</th><th>Commits</th></tr></thead>'
+        + '<tbody>' + silos.files.map(siloRow).join('') + '</tbody></table>';
+      silosEl.appendChild(tableWrap);
+      filesBtn.addEventListener('click', function () {
+        filesShown = !filesShown;
+        tableWrap.style.display = filesShown ? 'block' : 'none';
+        filesBtn.textContent = filesShown
+          ? 'Hide files \u25b4'
+          : 'Show all ' + silos.files.length + ' files \u25be';
+      });
     }
   }
 
@@ -340,6 +352,9 @@
     });
   }
   charts.firefighting = makeFirefightingChart('chart-firefighting');
+
+  var ffSpikeHintEl = document.getElementById('ff-spike-hint');
+  if (ffSpikeHintEl && !firefighting.spikes.length) ffSpikeHintEl.style.display = 'none';
 
   if (firefighting.months.length) {
     document.getElementById('ff-avg').textContent    = firefighting.average.toFixed(1) + ' incidents/mo avg';
