@@ -26,7 +26,7 @@ async function collect(repoPath, { since }) {
     );
 
     const entries = logOut.split('\n').map(l => l.trim()).filter(Boolean);
-    if (entries.length === 0) continue;
+    if (entries.length < 2) continue; // single-commit = just created, not yet a silo
 
     const authors = new Set(entries.map(e => e.split('|')[0]));
     if (authors.size !== 1) continue;
