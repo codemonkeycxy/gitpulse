@@ -1,1 +1,382 @@
-<!-- Implemented in Task 8 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>gitpulse report</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0f172a; color: #e2e8f0; font-family: system-ui, -apple-system, sans-serif; font-size: 14px; line-height: 1.5; }
+
+  .container { max-width: 960px; margin: 0 auto; padding: 24px 16px; }
+
+  /* Header */
+  .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e293b; padding-bottom: 16px; margin-bottom: 24px; }
+  .header h1 { font-size: 20px; font-weight: 700; color: #6366f1; letter-spacing: 1px; }
+  .header .meta { color: #475569; font-size: 12px; margin-top: 2px; }
+  .header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+  .toggle-btn { background: #1e293b; border: 1px solid #334155; color: #94a3b8; border-radius: 6px; padding: 6px 12px; font-size: 12px; cursor: pointer; }
+  .toggle-btn:hover { background: #334155; color: #e2e8f0; }
+  .gen-date { color: #334155; font-size: 11px; }
+
+  /* Section card */
+  .section { background: #1e293b; border-radius: 8px; padding: 20px; margin-bottom: 16px; }
+  .section-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 14px; }
+  .section-title { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; color: #64748b; text-transform: uppercase; }
+  .section-subtitle { font-size: 12px; color: #475569; }
+
+  /* Churn bars */
+  .churn-list { display: flex; flex-direction: column; gap: 6px; }
+  .churn-row { display: flex; align-items: center; gap: 8px; }
+  .churn-label { width: 220px; font-size: 12px; font-family: monospace; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; }
+  .churn-track { flex: 1; background: #0f172a; border-radius: 3px; height: 10px; }
+  .churn-fill  { height: 10px; border-radius: 3px; }
+  .churn-count { width: 36px; text-align: right; font-size: 11px; color: #475569; flex-shrink: 0; }
+  .badge { display: inline-block; border-radius: 4px; padding: 1px 6px; font-size: 10px; font-weight: 600; margin-left: 4px; }
+  .badge-danger { background: rgba(239,68,68,.15); color: #ef4444; }
+  .badge-bugs   { background: rgba(245,158,11,.15); color: #f59e0b; }
+  .legend { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #64748b; }
+  .legend-dot  { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+  /* Momentum */
+  .momentum-meta  { display: flex; justify-content: space-between; font-size: 11px; color: #475569; margin-bottom: 6px; }
+  .momentum-stats { display: flex; justify-content: space-between; margin-top: 8px; font-size: 11px; color: #475569; }
+  .trend-growing  { color: #22c55e; font-weight: 600; }
+  .trend-declining { color: #ef4444; font-weight: 600; }
+  .trend-stable   { color: #94a3b8; font-weight: 600; }
+
+  /* Contributors */
+  .contributors-layout { display: flex; gap: 24px; align-items: center; }
+  .donut-wrap   { width: 160px; height: 160px; flex-shrink: 0; position: relative; }
+  .legend-list  { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+  .legend-row   { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+  .legend-color { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }
+  .legend-name  { flex: 1; color: #e2e8f0; }
+  .legend-pct   { color: #64748b; font-size: 11px; }
+  .bus-badge    { text-align: center; background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.3); border-radius: 8px; padding: 12px 16px; min-width: 80px; }
+  .bus-badge.ok { background: rgba(34,197,94,.1); border-color: rgba(34,197,94,.3); }
+  .bus-num      { font-size: 28px; font-weight: 700; color: #ef4444; line-height: 1; }
+  .bus-badge.ok .bus-num { color: #22c55e; }
+  .bus-label    { font-size: 10px; color: #64748b; margin-top: 4px; }
+  .bus-risk     { font-size: 10px; color: #ef4444; margin-top: 2px; }
+  .bus-badge.ok .bus-risk { color: #22c55e; }
+
+  /* Silos table */
+  .silos-table    { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .silos-table th { color: #475569; text-align: left; padding: 6px 8px; border-bottom: 1px solid #0f172a; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  .silos-table td { padding: 6px 8px; color: #94a3b8; font-family: monospace; border-bottom: 1px solid #1a2535; }
+  .silos-table tr:last-child td { border-bottom: none; }
+  .age-old    { color: #ef4444; }
+  .age-medium { color: #f59e0b; }
+  .age-recent { color: #22c55e; }
+  .owner-name { color: #6366f1; font-family: system-ui, sans-serif; }
+
+  /* Firefighting */
+  .ff-stats { display: flex; justify-content: space-between; margin-top: 8px; font-size: 11px; color: #475569; }
+
+  /* Empty state */
+  .empty { color: #334155; font-size: 12px; text-align: center; padding: 24px 0; }
+
+  /* Grid view */
+  .grid-view { display: none; }
+  body.grid-mode .scrolling-view { display: none; }
+  body.grid-mode .grid-view      { display: block; }
+
+  .kpi-row    { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; }
+  .kpi-card   { background: #1e293b; border-radius: 8px; padding: 14px; text-align: center; }
+  .kpi-value  { font-size: 26px; font-weight: 700; line-height: 1; }
+  .kpi-label  { font-size: 9px; color: #475569; letter-spacing: 1px; text-transform: uppercase; margin-top: 4px; }
+  .kpi-red    { color: #ef4444; }
+  .kpi-green  { color: #22c55e; }
+  .kpi-amber  { color: #f59e0b; }
+
+  .grid-top    { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .grid-bottom { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .grid-card   { background: #1e293b; border-radius: 8px; padding: 14px; }
+  .grid-card .section-title { font-size: 9px; font-weight: 700; letter-spacing: 1.5px; color: #475569; text-transform: uppercase; display: block; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+
+<script id="gitpulse-data" type="application/json">"__GITPULSE_DATA__"</script>
+
+<div class="container">
+
+  <div class="header">
+    <div>
+      <h1>&#9889; GITPULSE</h1>
+      <div class="meta" id="header-meta"></div>
+    </div>
+    <div class="header-right">
+      <button class="toggle-btn" id="view-toggle">&#8862; Grid view</button>
+      <span class="gen-date" id="gen-date"></span>
+    </div>
+  </div>
+
+  <!-- SCROLLING VIEW (default) -->
+  <div class="scrolling-view">
+    <div class="section">
+      <div class="section-header">
+        <span class="section-title">&#9312; File Churn + Bug Hotspots</span>
+        <span class="section-subtitle">where the team struggles most</span>
+      </div>
+      <div class="churn-list" id="churn-list"></div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div>high churn + bugs</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#6366f1"></div>high churn</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#f59e0b"></div>bug-prone, low churn</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <span class="section-title">&#9313; Project Momentum</span>
+        <span class="section-subtitle">team velocity over time</span>
+      </div>
+      <div class="momentum-meta">
+        <span id="momentum-since"></span>
+        <span id="momentum-trend"></span>
+      </div>
+      <div style="position:relative;height:140px"><canvas id="chart-momentum"></canvas></div>
+      <div class="momentum-stats">
+        <span id="momentum-avg"></span>
+        <span id="momentum-recent"></span>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <span class="section-title">&#9314; Contributor Distribution</span>
+        <span class="section-subtitle">bus factor risk</span>
+      </div>
+      <div class="contributors-layout">
+        <div class="donut-wrap"><canvas id="chart-contributors"></canvas></div>
+        <div class="legend-list" id="contributors-legend"></div>
+        <div class="bus-badge" id="bus-badge">
+          <div class="bus-num" id="bus-num"></div>
+          <div class="bus-label">bus factor</div>
+          <div class="bus-risk" id="bus-risk"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <span class="section-title">&#9315; Knowledge Silos</span>
+        <span class="section-subtitle">files touched by only one person</span>
+      </div>
+      <div id="silos-container"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <span class="section-title">&#9316; Firefighting Frequency</span>
+        <span class="section-subtitle">reverts, hotfixes &amp; rollbacks over time</span>
+      </div>
+      <div style="position:relative;height:120px"><canvas id="chart-firefighting"></canvas></div>
+      <div class="ff-stats">
+        <span id="ff-avg"></span>
+        <span id="ff-spikes"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- GRID VIEW -->
+  <div class="grid-view">
+    <div class="kpi-row">
+      <div class="kpi-card"><div class="kpi-value kpi-red"   id="kpi-hotfiles"></div><div class="kpi-label">hot files</div></div>
+      <div class="kpi-card"><div class="kpi-value kpi-red"   id="kpi-busfactor"></div><div class="kpi-label">bus factor</div></div>
+      <div class="kpi-card"><div class="kpi-value kpi-green" id="kpi-momentum"></div><div class="kpi-label">momentum</div></div>
+      <div class="kpi-card"><div class="kpi-value kpi-amber" id="kpi-silos"></div><div class="kpi-label">silos</div></div>
+    </div>
+    <div class="grid-top">
+      <div class="grid-card">
+        <span class="section-title">File Churn + Bug Hotspots</span>
+        <div id="grid-churn-list"></div>
+      </div>
+      <div class="grid-card">
+        <span class="section-title">Project Momentum</span>
+        <div style="position:relative;height:120px"><canvas id="chart-momentum-grid"></canvas></div>
+      </div>
+    </div>
+    <div class="grid-bottom">
+      <div class="grid-card">
+        <span class="section-title">Contributors</span>
+        <div style="position:relative;height:110px"><canvas id="chart-contributors-grid"></canvas></div>
+      </div>
+      <div class="grid-card">
+        <span class="section-title">Knowledge Silos</span>
+        <div id="grid-silos-list" style="font-size:11px"></div>
+      </div>
+      <div class="grid-card">
+        <span class="section-title">Firefighting</span>
+        <div style="position:relative;height:110px"><canvas id="chart-firefighting-grid"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>__CHARTJS_CODE__</script>
+<script>
+(function () {
+  var COLORS = {
+    danger: '#ef4444', churn: '#6366f1', bugs: '#f59e0b',
+    momentum: '#22c55e', ff: '#ef4444', others: '#334155',
+    palette: ['#6366f1','#f59e0b','#22c55e','#ec4899','#3b82f6','#a855f7','#06b6d4','#84cc16','#f97316','#64748b'],
+  };
+
+  var raw  = document.getElementById('gitpulse-data').textContent;
+  var data = JSON.parse(raw);
+  var meta = data.meta, churn = data.churn, momentum = data.momentum;
+  var contributors = data.contributors, silos = data.silos, firefighting = data.firefighting;
+
+  document.getElementById('header-meta').textContent =
+    meta.repoName + ' \u00b7 ' + meta.totalCommits.toLocaleString() + ' commits \u00b7 last ' + meta.sinceLabel;
+  document.getElementById('gen-date').textContent =
+    'generated ' + new Date(meta.generatedAt).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+
+  var toggleBtn = document.getElementById('view-toggle');
+  if (localStorage.getItem('gitpulse-view') === 'grid') document.body.classList.add('grid-mode');
+  function syncLabel() {
+    toggleBtn.textContent = document.body.classList.contains('grid-mode') ? '\u2630 Scrolling view' : '\u229e Grid view';
+  }
+  syncLabel();
+  toggleBtn.addEventListener('click', function () {
+    document.body.classList.toggle('grid-mode');
+    localStorage.setItem('gitpulse-view', document.body.classList.contains('grid-mode') ? 'grid' : 'scrolling');
+    syncLabel();
+    Object.keys(charts).forEach(function (k) { if (charts[k]) charts[k].resize(); });
+  });
+
+  var charts = {};
+
+  function renderChurnList(id, limit) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    var files = limit ? churn.files.slice(0, limit) : churn.files;
+    if (!files.length) { el.innerHTML = '<div class="empty">No churn data</div>'; return; }
+    var max = churn.files[0].changes;
+    el.innerHTML = files.map(function (f) {
+      var pct   = Math.round(f.changes / max * 100);
+      var color = { danger: COLORS.danger, churn: COLORS.churn, bugs: COLORS.bugs }[f.category];
+      var badge = f.category === 'danger' ? '<span class="badge badge-danger">&#128293; hotspot</span>'
+                : f.category === 'bugs'   ? '<span class="badge badge-bugs">&#9888; bugs only</span>' : '';
+      return '<div class="churn-row"><div class="churn-label" title="' + f.path + '">' + f.path + '</div>'
+        + '<div class="churn-track"><div class="churn-fill" style="background:' + color + ';width:' + pct + '%"></div></div>'
+        + '<div class="churn-count">' + f.changes + '</div>' + badge + '</div>';
+    }).join('');
+  }
+  renderChurnList('churn-list');
+  renderChurnList('grid-churn-list', 5);
+  document.getElementById('kpi-hotfiles').textContent = churn.files.filter(function (f) { return f.category === 'danger'; }).length;
+
+  function makeMomentumChart(id) {
+    var ctx = document.getElementById(id);
+    if (!ctx) return null;
+    ctx = ctx.getContext('2d');
+    if (!momentum.months.length) { ctx.canvas.parentElement.innerHTML = '<div class="empty">No commit data</div>'; return null; }
+    return new Chart(ctx, {
+      type: 'line',
+      data: { labels: momentum.months, datasets: [{ data: momentum.counts, borderColor: COLORS.momentum, backgroundColor: 'rgba(34,197,94,0.1)', borderWidth: 2, fill: true, tension: 0.3, pointRadius: 2 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+        scales: { x: { ticks: { color: '#475569', maxRotation: 0, autoSkip: true, maxTicksLimit: 6 }, grid: { color: '#1a2535' } }, y: { ticks: { color: '#475569' }, grid: { color: '#1a2535' }, beginAtZero: true } } },
+    });
+  }
+  charts.momentum     = makeMomentumChart('chart-momentum');
+  charts.momentumGrid = makeMomentumChart('chart-momentum-grid');
+
+  if (momentum.months.length) {
+    var n = momentum.months.length;
+    document.getElementById('momentum-since').textContent = momentum.months[0] + ' \u2192 ' + momentum.months[n - 1];
+    var tEl = document.getElementById('momentum-trend');
+    tEl.textContent = (momentum.trend === 'growing' ? '\u2191' : momentum.trend === 'declining' ? '\u2193' : '\u2192') + ' ' + momentum.trend;
+    tEl.className = 'trend-' + momentum.trend;
+    var avgAll = Math.round(momentum.counts.reduce(function (a, b) { return a + b; }, 0) / n);
+    var last3c = momentum.counts.slice(-3);
+    var avgLast3 = Math.round(last3c.reduce(function (a, b) { return a + b; }, 0) / last3c.length);
+    document.getElementById('momentum-avg').textContent    = avgAll    + ' commits/mo avg';
+    document.getElementById('momentum-recent').textContent = avgLast3  + ' commits/mo (last 3mo)';
+    document.getElementById('kpi-momentum').textContent    = momentum.trend === 'growing' ? '\u2191' : momentum.trend === 'declining' ? '\u2193' : '\u2192';
+  }
+
+  function makeContributorsChart(id) {
+    var ctx = document.getElementById(id);
+    if (!ctx || !contributors.authors.length) return null;
+    ctx = ctx.getContext('2d');
+    var colors = contributors.authors.map(function (a, i) { return a.name === 'others' ? COLORS.others : COLORS.palette[i % COLORS.palette.length]; });
+    return new Chart(ctx, {
+      type: 'doughnut',
+      data: { labels: contributors.authors.map(function (a) { return a.name; }), datasets: [{ data: contributors.authors.map(function (a) { return a.commits; }), backgroundColor: colors, borderWidth: 0 }] },
+      options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { display: false } } },
+    });
+  }
+  charts.contributors     = makeContributorsChart('chart-contributors');
+  charts.contributorsGrid = makeContributorsChart('chart-contributors-grid');
+
+  var legendEl = document.getElementById('contributors-legend');
+  if (legendEl && contributors.authors.length) {
+    legendEl.innerHTML = contributors.authors.slice(0, 8).map(function (a, i) {
+      var color = a.name === 'others' ? COLORS.others : COLORS.palette[i % COLORS.palette.length];
+      var pct   = Math.round(a.commits / contributors.total * 100);
+      return '<div class="legend-row"><div class="legend-color" style="background:' + color + '"></div><div class="legend-name">' + a.name + '</div><div class="legend-pct">' + pct + '%</div></div>';
+    }).join('');
+  }
+  var bf = contributors.busFactor;
+  if (bf > 2) document.getElementById('bus-badge').classList.add('ok');
+  document.getElementById('bus-num').textContent  = bf || '\u2014';
+  document.getElementById('bus-risk').textContent = bf <= 2 ? 'high risk' : 'healthy';
+  document.getElementById('kpi-busfactor').textContent = bf || '\u2014';
+
+  function ageClass(d) {
+    var mo = (Date.now() - new Date(d)) / (1000 * 60 * 60 * 24 * 30);
+    return mo > 6 ? 'age-old' : mo > 2 ? 'age-medium' : 'age-recent';
+  }
+  var silosEl = document.getElementById('silos-container');
+  if (silosEl) {
+    silosEl.innerHTML = silos.files.length
+      ? '<table class="silos-table"><thead><tr><th>File</th><th>Sole owner</th><th>Last touched</th><th>Commits</th></tr></thead><tbody>'
+        + silos.files.map(function (f) {
+            return '<tr><td title="' + f.path + '">' + f.path + '</td><td class="owner-name">' + f.owner + '</td><td class="' + ageClass(f.lastTouched) + '">' + f.lastTouched + '</td><td>' + f.commits + '</td></tr>';
+          }).join('') + '</tbody></table>'
+      : '<div class="empty">No knowledge silos detected</div>';
+  }
+  var gridSilosEl = document.getElementById('grid-silos-list');
+  if (gridSilosEl) {
+    gridSilosEl.innerHTML = silos.files.slice(0, 5).map(function (f) {
+      return '<div style="margin-bottom:4px;color:#94a3b8;font-family:monospace">' + f.path.split('/').pop() + ' <span style="color:#6366f1">' + f.owner + '</span></div>';
+    }).join('') || '<div class="empty" style="padding:8px 0">None detected</div>';
+  }
+  document.getElementById('kpi-silos').textContent = silos.files.length;
+
+  function makeFirefightingChart(id) {
+    var ctx = document.getElementById(id);
+    if (!ctx) return null;
+    ctx = ctx.getContext('2d');
+    if (!firefighting.months.length) { ctx.canvas.parentElement.innerHTML = '<div class="empty">No firefighting commits detected</div>'; return null; }
+    return new Chart(ctx, {
+      type: 'line',
+      data: { labels: firefighting.months, datasets: [{
+        data: firefighting.counts, borderColor: COLORS.ff, backgroundColor: 'rgba(239,68,68,0.08)',
+        borderWidth: 2, borderDash: [4, 3], fill: true, tension: 0,
+        pointRadius: firefighting.months.map(function (m) { return firefighting.spikes.indexOf(m) >= 0 ? 5 : 2; }),
+        pointBackgroundColor: firefighting.months.map(function (m) { return firefighting.spikes.indexOf(m) >= 0 ? '#ef4444' : '#475569'; }),
+      }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+        scales: { x: { ticks: { color: '#475569', maxRotation: 0, autoSkip: true, maxTicksLimit: 6 }, grid: { color: '#1a2535' } }, y: { ticks: { color: '#475569' }, grid: { color: '#1a2535' }, beginAtZero: true } } },
+    });
+  }
+  charts.firefighting     = makeFirefightingChart('chart-firefighting');
+  charts.firefightingGrid = makeFirefightingChart('chart-firefighting-grid');
+
+  if (firefighting.months.length) {
+    document.getElementById('ff-avg').textContent    = firefighting.average.toFixed(1) + ' incidents/mo avg';
+    document.getElementById('ff-spikes').textContent = firefighting.spikes.length
+      ? '\u26a0 spike' + (firefighting.spikes.length > 1 ? 's' : '') + ' detected: ' + firefighting.spikes.join(', ')
+      : 'no spikes detected';
+  }
+})();
+</script>
+</body>
+</html>
