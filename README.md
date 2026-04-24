@@ -43,10 +43,9 @@ npx @codemonkeycxy/gitpulse --no-open
 
 ## Publishing to npm
 
-1. Bump the `version` field in `package.json`
-2. Run `npm test` to verify nothing is broken
-3. Commit: `git commit -am "chore: bump to X.Y.Z"`
-4. Publish: `npm publish --access public`
+1. Run `npm test` to verify nothing is broken
+2. Bump and commit: `npm version patch` (or `minor` / `major`)
+3. Publish: `npm publish --access public`
 
 > The `--access public` flag is required because the package is scoped (`@codemonkeycxy/gitpulse`).
 
