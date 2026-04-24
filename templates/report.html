@@ -1,406 +1,965 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>gitpulse report</title>
+<title>gitpulse :: report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #0f172a; color: #e2e8f0; font-family: system-ui, -apple-system, sans-serif; font-size: 14px; line-height: 1.5; }
 
-  .container { max-width: 960px; margin: 0 auto; padding: 24px 16px; }
+  :root[data-theme="dark"] {
+    --bg:         #0c0f0d;
+    --bg-panel:  #11140f;
+    --bg-alt:    #16190f;
+    --ink:        #d6e8cc;
+    --ink-bright: #f0ffde;
+    --ink-dim:   #7a9970;
+    --ink-mut:   #4a5e45;
+    --rule:       #253820;
+    --rule-br:    #3a5230;
+    --accent:     #a5f55a;
+    --amber:      #f5b841;
+    --red:        #ff6a55;
+    --cyan:       #5fd3d3;
+  }
+  :root[data-theme="light"] {
+    --bg:         #f4f3ec;
+    --bg-panel:  #fbfbf4;
+    --bg-alt:    #ecebe0;
+    --ink:        #202820;
+    --ink-bright: #0c0f0d;
+    --ink-dim:   #556b50;
+    --ink-mut:   #8a9c84;
+    --rule:       #d2d9c9;
+    --rule-br:    #aab49e;
+    --accent:     #2d7a2d;
+    --amber:      #a87500;
+    --red:        #b73a22;
+    --cyan:       #1b7a7a;
+  }
 
-  /* Header */
-  .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e293b; padding-bottom: 16px; margin-bottom: 24px; }
-  .header h1 { font-size: 20px; font-weight: 700; color: #6366f1; letter-spacing: 1px; }
-  .header .meta { color: #475569; font-size: 12px; margin-top: 2px; }
-  .gen-date { color: #334155; font-size: 11px; }
-  .source-link { color: #475569; font-size: 11px; text-decoration: none; display: block; text-align: right; margin-bottom: 4px; }
-  .source-link:hover { color: #94a3b8; text-decoration: underline; }
-  .report-disclaimer { font-size: 11px; color: #64748b; margin-bottom: 20px; }
+  html, body { background: var(--bg); color: var(--ink); }
+  body {
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+    font-size: 14px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    padding-bottom: 80px;
+    letter-spacing: -0.005em;
+  }
+  .page { max-width: 1440px; margin: 0 auto; padding: 36px 48px 0; }
 
-  /* Section card */
-  .section { background: #1e293b; border-radius: 8px; padding: 20px; margin-bottom: 16px; }
-  .section-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 14px; }
-  .section-title { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; color: #64748b; text-transform: uppercase; }
-  .section-subtitle { font-size: 12px; color: #475569; }
+  .prompt {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: start;
+    gap: 16px;
+    padding-bottom: 22px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .ps1-line { font-size: 13px; color: var(--ink-dim); }
+  .ps1-line .prompt-ch { color: var(--accent); }
+  .ps1-line .user { color: var(--cyan); }
+  .ps1-line .path { color: var(--amber); }
+  .ps1-line .cmd  { color: var(--ink-bright); }
 
-  /* Churn bars */
-  .churn-list { display: flex; flex-direction: column; gap: 6px; }
-  .churn-row { display: flex; align-items: center; gap: 8px; }
-  .churn-label { flex: 1; min-width: 0; font-size: 12px; font-family: monospace; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .churn-track { flex: 0 0 140px; background: #0f172a; border-radius: 3px; height: 10px; }
-  .churn-fill  { height: 10px; border-radius: 3px; }
-  .churn-count { width: 36px; text-align: right; font-size: 11px; color: #475569; flex-shrink: 0; }
+  .wordmark { margin-top: 18px; display: flex; align-items: baseline; gap: 18px; flex-wrap: wrap; }
+  .wordmark-logo {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-weight: 700; font-size: 44px; letter-spacing: 0.05em;
+    line-height: 1; color: var(--accent);
+  }
+  .wordmark-logo .dot { color: var(--red); }
+  .wordmark-tag {
+    font-family: 'Instrument Sans', sans-serif; font-style: italic;
+    font-size: 17px; color: var(--ink-dim); font-weight: 400;
+  }
+  .wordmark-tag::before { content: '// '; color: var(--ink-mut); font-style: normal; }
 
-  /* Momentum */
-  .momentum-meta  { display: flex; justify-content: space-between; font-size: 11px; color: #475569; margin-bottom: 6px; }
-  .momentum-stats { display: flex; justify-content: space-between; margin-top: 8px; font-size: 11px; color: #475569; }
-  .trend-growing  { color: #22c55e; font-weight: 600; }
-  .trend-declining { color: #ef4444; font-weight: 600; }
-  .trend-stable   { color: #94a3b8; font-weight: 600; }
+  .header-meta {
+    margin-top: 20px;
+    display: grid;
+    grid-template-columns: repeat(4, auto);
+    gap: 4px 36px;
+    font-size: 12px;
+    color: var(--ink-dim);
+  }
+  .header-meta b { color: var(--ink-bright); font-weight: 600; }
+  .header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+  .theme-toggle {
+    background: transparent; border: 1px solid var(--rule-br); color: var(--ink-dim);
+    padding: 4px 10px; font: 500 11px 'JetBrains Mono', monospace;
+    cursor: pointer; border-radius: 2px; letter-spacing: 0.05em;
+    text-decoration: none; display: inline-block;
+  }
+  .theme-toggle:hover { color: var(--accent); border-color: var(--accent); }
+  .theme-toggle::before { content: '['; color: var(--ink-mut); margin-right: 4px; }
+  .theme-toggle::after  { content: ']'; color: var(--ink-mut); margin-left: 4px; }
 
-  /* Contributors */
-  .contributors-layout { display: flex; gap: 24px; align-items: center; }
-  .donut-wrap   { width: 160px; height: 160px; flex-shrink: 0; position: relative; }
-  .legend-list  { flex: 1; display: flex; flex-direction: column; gap: 6px; }
-  .legend-row   { display: flex; align-items: center; gap: 8px; font-size: 12px; }
-  .legend-color { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }
-  .legend-name  { flex: 1; color: #e2e8f0; }
-  .legend-pct   { color: #64748b; font-size: 11px; }
-  .concentration { font-size: 11px; font-weight: 600; margin-top: 10px; }
+  .caret {
+    display: inline-block;
+    width: 8px; height: 1em;
+    background: var(--accent);
+    vertical-align: -2px;
+    animation: blink 1s steps(2) infinite;
+    margin-left: 2px;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
 
-  /* Silos table */
-  .silos-table    { width: 100%; border-collapse: collapse; font-size: 12px; }
-  .silos-table th { color: #475569; text-align: left; padding: 6px 8px; border-bottom: 1px solid #0f172a; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-  .silos-table td { padding: 6px 8px; color: #94a3b8; font-family: monospace; border-bottom: 1px solid #1a2535; }
-  .silos-table tr:last-child td { border-bottom: none; }
-  .age-old    { color: #ef4444; }
-  .age-medium { color: #f59e0b; }
-  .age-recent { color: #22c55e; }
-  .owner-name { color: #6366f1; font-family: system-ui, sans-serif; }
+  .status {
+    margin: 28px 0;
+    border: 1px solid var(--rule-br);
+    background: var(--bg-panel);
+    display: grid;
+    grid-template-columns: 200px 1fr;
+  }
+  .status-overall {
+    padding: 26px 24px 22px;
+    border-right: 1px solid var(--rule);
+  }
+  .status-overall-label {
+    font-size: 10px; letter-spacing: 0.2em;
+    color: var(--ink-mut); text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .status-overall-label::before {
+    content: '● '; color: var(--accent);
+    animation: pulse 2s ease-in-out infinite; letter-spacing: 0;
+  }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+  .status-overall-num {
+    font-weight: 700; font-size: 88px; line-height: 0.88;
+    letter-spacing: -0.05em; color: var(--accent);
+  }
+  .status-overall-num .of {
+    font-size: 20px; letter-spacing: 0; color: var(--ink-mut);
+    font-weight: 500; margin-left: 2px;
+  }
+  .status-overall-tag {
+    display: inline-block; margin-top: 14px;
+    font-size: 10px; font-weight: 600;
+    padding: 4px 10px; border: 1px solid currentColor;
+    letter-spacing: 0.18em; text-transform: uppercase;
+  }
+  .status-overall-tag::before { content: '> '; opacity: 0.6; }
+  .status-overall-tag.good { color: var(--accent); }
+  .status-overall-tag.ok   { color: var(--amber); }
+  .status-overall-tag.warn { color: var(--amber); }
+  .status-overall-tag.bad  { color: var(--red); }
 
-  /* Firefighting */
-  .ff-stats { display: flex; justify-content: space-between; margin-top: 8px; font-size: 11px; color: #475569; }
-  .ff-commits { margin-top: 10px; }
-  .ff-month-group { margin-bottom: 10px; }
-  .ff-month-label { font-size: 10px; color: #64748b; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 4px; }
-  .ff-commit-row { display: flex; align-items: baseline; gap: 8px; padding: 2px 0; font-size: 11px; }
-  .ff-commit-hash { color: #6366f1; font-family: monospace; flex-shrink: 0; text-decoration: none; }
-  .ff-commit-hash:hover { text-decoration: underline; }
-  .ff-commit-subject { color: #94a3b8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .vitals-cols { display: grid; grid-template-columns: repeat(5, 1fr); }
+  .vcol {
+    padding: 22px 20px 20px;
+    border-right: 1px solid var(--rule);
+  }
+  .vcol:last-child { border-right: none; }
+  .vcol-label {
+    font-size: 10px; letter-spacing: 0.18em;
+    color: var(--ink-mut); text-transform: uppercase;
+    margin-bottom: 12px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .vcol-label::before {
+    content: ''; display: inline-block;
+    width: 6px; height: 6px; background: var(--ink-mut);
+    border-radius: 50%;
+  }
+  .vcol[data-tone="good"] .vcol-label::before { background: var(--accent); }
+  .vcol[data-tone="warn"] .vcol-label::before { background: var(--amber); }
+  .vcol[data-tone="bad"]  .vcol-label::before { background: var(--red); }
+  .vcol-val {
+    font-size: 28px; font-weight: 600;
+    color: var(--ink-bright); letter-spacing: -0.03em; line-height: 1;
+  }
+  .vcol-val .of {
+    font-size: 13px; color: var(--ink-mut);
+    font-weight: 500; margin-left: 3px; letter-spacing: 0;
+  }
+  .vcol-bar {
+    margin-top: 10px; font-size: 12px; color: var(--accent);
+    letter-spacing: -0.08em; white-space: nowrap;
+  }
+  .vcol[data-tone="warn"] .vcol-bar { color: var(--amber); }
+  .vcol[data-tone="bad"]  .vcol-bar { color: var(--red); }
+  .vcol-bar .fade { color: var(--rule-br); }
+  .vcol-hint { margin-top: 10px; font-size: 11px; color: var(--ink-dim); line-height: 1.4; }
 
-  /* Section hint */
-  .section-hint { font-size: 11px; color: #94a3b8; margin-bottom: 12px; line-height: 1.6; }
+  .section { margin: 44px 0; }
+  .sec-head {
+    display: flex; align-items: baseline; gap: 14px;
+    padding-bottom: 12px; border-bottom: 1px solid var(--rule-br);
+    margin-bottom: 4px; flex-wrap: nowrap;
+  }
+  .sec-tag { color: var(--ink-mut); font-weight: 500; font-size: 12px; letter-spacing: 0.1em; }
+  .sec-title {
+    flex-shrink: 0; white-space: nowrap;
+    font-family: 'Instrument Sans', sans-serif;
+    font-weight: 600; font-size: 24px;
+    color: var(--ink-bright); letter-spacing: -0.015em;
+  }
+  .sec-rule {
+    flex: 1; height: 1px;
+    background: repeating-linear-gradient(90deg, var(--rule-br) 0 6px, transparent 6px 10px);
+    align-self: center; margin: 0 6px;
+  }
+  .sec-meta {
+    font-size: 11px; color: var(--ink-mut);
+    letter-spacing: 0.06em; font-family: 'JetBrains Mono', monospace;
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .sec-meta .flag { color: var(--accent); }
+  .sec-hint {
+    padding: 10px 0 16px;
+    color: var(--ink-dim); font-size: 13px; max-width: 780px;
+  }
+  .sec-hint::before { content: '# '; color: var(--ink-mut); }
+  .sec-hint code { color: var(--amber); }
 
-  /* Noise note */
-  .noise-note { font-size: 11px; color: #334155; margin-top: 10px; }
-  .noise-note code { background: #0f172a; border-radius: 3px; padding: 1px 5px; font-family: monospace; color: #64748b; }
+  .ascii-block {
+    background: var(--bg-panel);
+    border: 1px solid var(--rule);
+    padding: 14px 18px;
+    font-size: 13px;
+    overflow-x: auto;
+  }
+  .ascii-block .head {
+    color: var(--ink-mut); font-size: 11px;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    padding-bottom: 8px;
+    border-bottom: 1px dashed var(--rule-br);
+    margin-bottom: 8px;
+    display: grid;
+    grid-template-columns: 36px 1fr 260px 48px;
+    gap: 16px;
+  }
+  .ascii-row {
+    display: grid;
+    grid-template-columns: 36px 1fr 260px 48px;
+    gap: 16px; align-items: center; padding: 2px 0;
+  }
+  .ascii-rank { color: var(--ink-mut); font-size: 12px; }
+  .ascii-path { color: var(--ink-bright); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ascii-bar  { color: var(--accent); letter-spacing: -0.12em; white-space: nowrap; font-size: 13px; }
+  .ascii-bar .fade { color: var(--ink-mut); }
+  .ascii-num  { color: var(--ink-dim); font-size: 12px; text-align: right; }
 
-  /* Show more / toggle button */
-  .show-more-btn { background: none; border: 1px solid #334155; color: #64748b; border-radius: 4px; padding: 4px 10px; font-size: 11px; cursor: pointer; margin-top: 8px; }
-  .show-more-btn:hover { border-color: #475569; color: #94a3b8; }
+  .noise-note { margin-top: 10px; font-size: 12px; color: var(--ink-mut); }
+  .noise-note::before { content: 'i '; color: var(--cyan); }
+  .noise-note code { color: var(--amber); }
 
-  /* Empty state */
-  .empty { color: #334155; font-size: 12px; text-align: center; padding: 24px 0; }
+  .chart-frame {
+    background: var(--bg-panel);
+    border: 1px solid var(--rule);
+  }
+  .chart-frame-head {
+    padding: 10px 16px;
+    border-bottom: 1px dashed var(--rule-br);
+    display: flex; justify-content: space-between;
+    font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--ink-mut);
+  }
+  .chart-frame-head .val { color: var(--ink-bright); }
+  .chart-frame-head .val.good { color: var(--accent); }
+  .chart-frame-head .val.bad  { color: var(--red); }
+  .chart-frame-head .val.warn { color: var(--amber); }
+  .chart-frame-body { padding: 12px; }
+  .chart-frame-body svg { width: 100%; height: 240px; display: block; }
+  .chart-frame-foot {
+    padding: 10px 16px;
+    border-top: 1px dashed var(--rule-br);
+    display: flex; justify-content: space-between;
+    font-size: 11px; color: var(--ink-mut);
+  }
 
+  .contrib {
+    display: grid; grid-template-columns: 300px 1fr; gap: 36px;
+    background: var(--bg-panel);
+    border: 1px solid var(--rule);
+    padding: 24px; align-items: center;
+  }
+  .contrib-chart { width: 300px; height: 300px; position: relative; }
+  .contrib-chart svg { display: block; }
+  .contrib-center {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    pointer-events: none; text-align: center;
+  }
+  .contrib-center-num { font-size: 44px; font-weight: 600; color: var(--accent); letter-spacing: -0.03em; line-height: 1; }
+  .contrib-center-lbl { font-size: 10px; color: var(--ink-mut); letter-spacing: 0.18em; text-transform: uppercase; margin-top: 6px; }
 
+  .contrib-list { display: flex; flex-direction: column; gap: 0; }
+  .contrib-row {
+    display: grid;
+    grid-template-columns: 12px 180px 1fr 40px 50px;
+    align-items: center; gap: 12px;
+    padding: 9px 0;
+    border-bottom: 1px dashed var(--rule);
+    font-size: 13px;
+  }
+  .contrib-dot { width: 10px; height: 10px; border-radius: 1px; }
+  .contrib-name { color: var(--ink-bright); }
+  .contrib-bar { height: 8px; background: var(--rule); position: relative; }
+  .contrib-bar > span { position: absolute; left: 0; top: 0; bottom: 0; }
+  .contrib-count { color: var(--ink-dim); text-align: right; font-size: 12px; }
+  .contrib-pct   { color: var(--accent); text-align: right; font-weight: 600; font-size: 13px; }
+
+  .concern {
+    margin-top: 14px;
+    padding: 10px 14px;
+    border: 1px solid var(--red);
+    background: rgba(255,106,85,0.06);
+    font-size: 12px;
+    color: var(--ink-bright);
+  }
+  .concern::before {
+    content: 'WARN';
+    font-weight: 700; color: var(--red);
+    margin-right: 10px; letter-spacing: 0.1em;
+  }
+
+  .silos { display: grid; grid-template-columns: 320px 1fr; gap: 28px; }
+  .silos-owners {
+    background: var(--bg-panel); border: 1px solid var(--rule);
+    padding: 16px 18px;
+  }
+  .silos-owners-head {
+    font-size: 11px; color: var(--ink-mut);
+    letter-spacing: 0.12em; text-transform: uppercase;
+    margin-bottom: 10px;
+    border-bottom: 1px dashed var(--rule-br);
+    padding-bottom: 6px;
+  }
+  .silos-owner-row { display: grid; grid-template-columns: 1fr auto; gap: 12px; padding: 6px 0; font-size: 13px; }
+  .silos-owner-name { color: var(--ink-bright); }
+  .silos-owner-bar {
+    grid-column: 1 / -1;
+    color: var(--accent); font-size: 11px;
+    letter-spacing: -0.12em; margin-top: -2px;
+  }
+  .silos-owner-ct { color: var(--ink-dim); font-size: 12px; }
+
+  .silos-table-wrap {
+    background: var(--bg-panel); border: 1px solid var(--rule);
+    padding: 16px 18px; overflow-x: auto;
+  }
+  .silos-tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .silos-tbl th {
+    text-align: left; padding: 6px 10px 10px;
+    font-size: 10px; letter-spacing: 0.14em;
+    color: var(--ink-mut); text-transform: uppercase;
+    border-bottom: 1px dashed var(--rule-br);
+    font-weight: 500;
+  }
+  .silos-tbl td { padding: 7px 10px; border-bottom: 1px dashed var(--rule); }
+  .silos-tbl td.path { color: var(--ink-bright); }
+  .silos-tbl td.owner { color: var(--cyan); }
+  .silos-tbl td.date-old    { color: var(--red); }
+  .silos-tbl td.date-medium { color: var(--amber); }
+  .silos-tbl td.date-recent { color: var(--accent); }
+  .silos-tbl td.commits { text-align: right; color: var(--ink-dim); }
+
+  .ff-wrap { display: flex; flex-direction: column; gap: 16px; }
+  .toggle-btn {
+    background: transparent; border: 1px solid var(--rule-br); color: var(--ink-dim);
+    padding: 6px 14px; font: 500 11px 'JetBrains Mono', monospace;
+    cursor: pointer; border-radius: 0;
+    align-self: flex-start; letter-spacing: 0.04em;
+  }
+  .toggle-btn:hover { color: var(--accent); border-color: var(--accent); }
+  .toggle-btn::before { content: '['; color: var(--ink-mut); margin-right: 4px; }
+  .toggle-btn::after  { content: ']'; color: var(--ink-mut); margin-left: 4px; }
+
+  .ff-log {
+    display: none;
+    background: var(--bg-panel); border: 1px solid var(--rule);
+    padding: 16px 18px;
+  }
+  .ff-log-month { margin-bottom: 14px; }
+  .ff-log-month:last-child { margin-bottom: 0; }
+  .ff-log-month-hdr {
+    display: flex; justify-content: space-between;
+    font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--ink-mut);
+    padding-bottom: 6px; margin-bottom: 4px;
+    border-bottom: 1px dashed var(--rule-br);
+  }
+  .ff-log-month-hdr .spike { color: var(--red); }
+  .ff-log-row {
+    display: grid;
+    grid-template-columns: 72px 90px 1fr;
+    gap: 12px; padding: 4px 0; font-size: 13px;
+  }
+  .ff-log-hash { color: var(--accent); text-decoration: none; }
+  .ff-log-hash:hover { text-decoration: underline; }
+  .ff-log-kind {
+    font-size: 10px; font-weight: 600;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 1px 6px; text-align: center;
+    align-self: center; border: 1px solid currentColor;
+  }
+  .ff-log-kind.revert   { color: var(--red); }
+  .ff-log-kind.hotfix   { color: var(--amber); }
+  .ff-log-kind.rollback { color: var(--cyan); }
+  .ff-log-subj { color: var(--ink-bright); }
+
+  .footer {
+    margin-top: 60px;
+    padding: 16px 40px;
+    border-top: 1px solid var(--rule);
+    font-size: 12px; color: var(--ink-mut);
+    max-width: 1440px;
+    margin-left: auto; margin-right: auto;
+    display: flex; justify-content: space-between;
+  }
+  .footer code { color: var(--amber); }
+  .footer a { color: var(--ink-dim); text-decoration: none; }
+  .footer a:hover { color: var(--accent); }
+
+  @media (max-width: 1100px) {
+    .status { grid-template-columns: 1fr; }
+    .contrib { grid-template-columns: 1fr; }
+    .silos { grid-template-columns: 1fr; }
+  }
 </style>
 </head>
 <body>
+<div class="page">
 
-<script id="gitpulse-data" type="application/json">"__GITPULSE_DATA__"</script>
-
-<div class="container">
-
-  <div class="header">
+  <div class="prompt">
     <div>
-      <h1>&#9889; GITPULSE</h1>
-      <div class="meta" id="header-meta"></div>
+      <div class="ps1-line">
+        <span class="prompt-ch">❯</span>
+        <span class="cmd">npx gitpulse</span>
+      </div>
+      <div class="wordmark">
+        <div class="wordmark-logo">GITPULSE<span class="dot">.</span></div>
+        <div class="wordmark-tag">repository vitals<span class="caret"></span></div>
+      </div>
+      <div class="header-meta">
+        <div>repo: <b id="repo-name">—</b></div>
+        <div>commits: <b id="total-commits">—</b></div>
+        <div>window: <b id="window-label">—</b></div>
+        <div>generated: <b id="gen-date">—</b></div>
+      </div>
     </div>
-    <div style="text-align: right;">
-      <a class="source-link" href="https://github.com/codemonkeycxy/gitpulse" target="_blank"><svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor" style="vertical-align:middle;margin-right:4px;" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>View source on GitHub</a>
-      <span class="gen-date" id="gen-date"></span>
+    <div class="header-right">
+      <button class="theme-toggle" id="theme-toggle"><span id="theme-label">dark</span></button>
+      <a class="theme-toggle" href="#" id="gh-link" target="_blank" rel="noopener" style="display:none">view source ↗</a>
     </div>
   </div>
-  <p class="report-disclaimer">These metrics are heuristics based on commit history. They surface signals worth investigating, not verdicts.</p>
 
-  <div class="section">
-      <div class="section-header">
-        <span class="section-title">&#9312; File Churn</span>
-        <span class="section-subtitle">most changed files</span>
-      </div>
-      <p class="section-hint">Bar width = number of commits touching the file in the <span id="churn-window"></span>.</p>
-      <div class="churn-list" id="churn-list"></div>
-      <div id="churn-noise-note"></div>
+  <div class="status">
+    <div class="status-overall">
+      <div class="status-overall-label">health</div>
+      <div class="status-overall-num" id="overall-score">—</div>
+      <div class="status-overall-tag" id="overall-tag">—</div>
     </div>
+    <div class="vitals-cols" id="vitals-cols"></div>
+  </div>
 
-    <div class="section">
-      <div class="section-header">
-        <span class="section-title">&#9313; Project Momentum</span>
-        <span class="section-subtitle">team velocity over time</span>
+  <section class="section">
+    <div class="sec-head">
+      <div class="sec-tag">[01]</div>
+      <div class="sec-title">File Churn</div>
+      <div class="sec-rule"></div>
+      <div class="sec-meta" id="churn-meta"></div>
+    </div>
+    <p class="sec-hint">bar length = commits touching file. hotspots stack at the top — concentrate regression risk. run <code>--all-files</code> to include lockfiles and generated assets.</p>
+    <div class="ascii-block">
+      <div class="head">
+        <div>#</div><div>path</div><div>commits</div><div style="text-align:right">n</div>
       </div>
-      <p class="section-hint">Y-axis = commits per month. Trend (&#8593;/&#8595;/&#8594;) compares the last 3 months to the 3 months before that.</p>
-      <div class="momentum-meta">
-        <span id="momentum-since"></span>
-        <span id="momentum-trend"></span>
+      <div id="churn-rows"></div>
+    </div>
+    <div class="noise-note" id="churn-noise"></div>
+  </section>
+
+  <section class="section">
+    <div class="sec-head">
+      <div class="sec-tag">[02]</div>
+      <div class="sec-title">Project Momentum</div>
+      <div class="sec-rule"></div>
+      <div class="sec-meta"><span class="flag">--commits-per-month</span></div>
+    </div>
+    <p class="sec-hint">commits/month over the window. trend compares the last 3mo against the 3mo before them. steady or rising = healthy cadence.</p>
+    <div class="chart-frame">
+      <div class="chart-frame-head">
+        <span id="mom-range">—</span>
+        <span>trend: <span class="val" id="mom-trend">—</span></span>
       </div>
-      <div style="position:relative;height:140px"><canvas id="chart-momentum"></canvas></div>
-      <div class="momentum-stats">
-        <span id="momentum-avg"></span>
-        <span id="momentum-recent"></span>
+      <div class="chart-frame-body">
+        <svg id="mom-svg" viewBox="0 0 1200 240" preserveAspectRatio="none"></svg>
+      </div>
+      <div class="chart-frame-foot">
+        <span id="mom-avg">—</span>
+        <span id="mom-recent">—</span>
       </div>
     </div>
+  </section>
 
-    <div class="section">
-      <div class="section-header">
-        <span class="section-title">&#9314; Contributor Distribution</span>
-        <span class="section-subtitle">knowledge concentration</span>
-      </div>
-      <p class="section-hint">Slice size = share of total commits. A dominant slice means knowledge is concentrated — if that person left, much of the commit history context leaves with them.</p>
-      <div class="contributors-layout">
-        <div class="donut-wrap"><canvas id="chart-contributors"></canvas></div>
-        <div style="flex:1">
-          <div class="legend-list" id="contributors-legend"></div>
-          <div class="concentration" id="contributors-concentration"></div>
+  <section class="section">
+    <div class="sec-head">
+      <div class="sec-tag">[03]</div>
+      <div class="sec-title">Contributor Distribution</div>
+      <div class="sec-rule"></div>
+      <div class="sec-meta"><span class="flag">--concentration</span></div>
+    </div>
+    <p class="sec-hint">share of commits per author. dominant slice = bus-factor risk; spread out = institutional knowledge is distributed.</p>
+    <div class="contrib">
+      <div class="contrib-chart">
+        <svg viewBox="0 0 300 300" id="contrib-svg"></svg>
+        <div class="contrib-center">
+          <div class="contrib-center-num" id="contrib-num">—</div>
+          <div class="contrib-center-lbl">contributors</div>
         </div>
       </div>
-    </div>
-
-    <div class="section">
-      <div class="section-header">
-        <span class="section-title">&#9315; Knowledge Silos</span>
-        <span class="section-subtitle">files touched by only one person</span>
-      </div>
-      <p class="section-hint">Bar = number of files that person alone touched 2+ times in the window. Expand to browse individual files.</p>
-      <div id="silos-container"></div>
-    </div>
-
-    <div class="section">
-      <div class="section-header">
-        <span class="section-title">&#9316; Firefighting Frequency</span>
-        <span class="section-subtitle">reverts, hotfixes &amp; rollbacks over time</span>
-      </div>
-      <p class="section-hint">Commits whose subject line starts with revert, hotfix, or rollback. Y-axis = count per month.<span id="ff-spike-hint"> Larger dots mark spike months (2&times; the average).</span></p>
-      <div style="position:relative;height:120px"><canvas id="chart-firefighting"></canvas></div>
-      <div class="ff-stats">
-        <span id="ff-avg"></span>
-        <span id="ff-spikes"></span>
-      </div>
-      <button class="show-more-btn" id="ff-toggle" style="display:none"></button>
-      <div id="ff-commits-wrap" style="display:none">
-        <div class="ff-commits" id="ff-commits"></div>
+      <div>
+        <div class="contrib-list" id="contrib-list"></div>
+        <div class="concern" id="concern" style="display:none">—</div>
       </div>
     </div>
+  </section>
 
+  <section class="section">
+    <div class="sec-head">
+      <div class="sec-tag">[04]</div>
+      <div class="sec-title">Knowledge Silos</div>
+      <div class="sec-rule"></div>
+      <div class="sec-meta"><span class="flag">--single-owner</span></div>
+    </div>
+    <p class="sec-hint">files only one person has meaningfully touched (2+ commits, no other contributors). code review and rotation spread the load.</p>
+    <div class="silos">
+      <div class="silos-owners">
+        <div class="silos-owners-head">by owner</div>
+        <div id="silos-owners"></div>
+      </div>
+      <div class="silos-table-wrap">
+        <table class="silos-tbl" id="silos-tbl"></table>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="sec-head">
+      <div class="sec-tag">[05]</div>
+      <div class="sec-title">Firefighting Frequency</div>
+      <div class="sec-rule"></div>
+      <div class="sec-meta"><span class="flag">--revert --hotfix --rollback</span></div>
+    </div>
+    <p class="sec-hint">commits whose subject starts with <code>revert</code>, <code>hotfix</code> or <code>rollback</code>. spikes = months on defense. correlates with launches and dependency breaks.</p>
+    <div class="ff-wrap">
+      <div class="chart-frame">
+        <div class="chart-frame-head">
+          <span id="ff-avg">—</span>
+          <span class="val" id="ff-spikes">—</span>
+        </div>
+        <div class="chart-frame-body">
+          <svg id="ff-svg" viewBox="0 0 1200 200" preserveAspectRatio="none"></svg>
+        </div>
+      </div>
+      <button class="toggle-btn" id="ff-toggle">tail incidents.log</button>
+      <div class="ff-log" id="ff-log"></div>
+    </div>
+  </section>
+
+  <div class="footer">
+    <div>heuristics from commit history. signals, not verdicts. rerun with <code>npx gitpulse</code>.</div>
+    <div>exit 0 ✓</div>
+  </div>
 </div>
 
-<script>__CHARTJS_CODE__</script>
+<script type="application/json" id="gitpulse-data">"__GITPULSE_DATA__"</script>
+
+<!-- chart.js no longer used (inline SVG instead). Placeholder kept so the renderer's substitution is harmless. -->
+<script>/* __CHARTJS_CODE__ */</script>
+
 <script>
 (function () {
-  var COLORS = {
-    danger: '#ef4444', churn: '#6366f1', bugs: '#f59e0b',
-    momentum: '#22c55e', ff: '#ef4444', others: '#334155',
-    palette: ['#6366f1','#f59e0b','#22c55e','#ec4899','#3b82f6','#a855f7','#06b6d4','#84cc16','#f97316','#64748b'],
-  };
+  'use strict';
 
-  var raw  = document.getElementById('gitpulse-data').textContent;
-  var data = JSON.parse(raw);
-  var meta = data.meta, churn = data.churn, momentum = data.momentum;
-  var contributors = data.contributors, silos = data.silos, firefighting = data.firefighting;
+  // ——— Data ———
+  const DATA = JSON.parse(document.getElementById('gitpulse-data').textContent);
+  const { meta, churn, momentum, contributors, silos, firefighting } = DATA;
 
-  document.getElementById('header-meta').textContent =
-    meta.repoName + ' \u00b7 ' + meta.totalCommits.toLocaleString() + ' commits \u00b7 last ' + meta.sinceLabel;
-  document.getElementById('gen-date').textContent =
-    'generated ' + new Date(meta.generatedAt).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
-  document.getElementById('churn-window').textContent =
-    meta.sinceLabel === '12 months' ? 'last 12 months' : 'since ' + meta.sinceLabel;
+  // ——— Utils ———
+  function escape(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function ageBucket(dateStr) {
+    const months = (Date.now() - new Date(dateStr).getTime()) / (1000*60*60*24*30);
+    if (months > 6) return 'old';
+    if (months > 2) return 'medium';
+    return 'recent';
+  }
+  function formatMonth(ym) {
+    const [y, m] = ym.split('-').map(Number);
+    const d = new Date(y, m - 1, 1);
+    return d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+  }
+  function formatNumber(n) { return Number(n).toLocaleString('en-US'); }
 
-  var charts = {};
+  // ——— Health score ———
+  function computeHealth(data) {
+    const { contributors, momentum, firefighting, silos, churn } = data;
 
-  function esc(s) {
-    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    // Bus factor — penalises top-contributor concentration above 25%.
+    const total = contributors.total || (contributors.authors || []).reduce((a,c)=>a+c.commits,0);
+    const top = (contributors.authors && contributors.authors[0] && contributors.authors[0].commits) || 0;
+    const topPct = total ? top / total : 0;
+    const busFactor = Math.round(Math.max(0, Math.min(100, 100 - (topPct - 0.25) * 200)));
+
+    // Velocity — last half avg vs first half avg of monthly counts.
+    const counts = momentum.counts || [];
+    const half = Math.floor(counts.length / 2);
+    const early = counts.slice(0, half).reduce((a,b)=>a+b,0) / Math.max(1, half);
+    const late  = counts.slice(half).reduce((a,b)=>a+b,0) / Math.max(1, counts.length - half);
+    const delta = early ? (late - early) / early : 0;
+    const velocity = Math.round(Math.max(0, Math.min(100, 80 + delta * 40)));
+
+    // Stability — inverse of firefighting average (8pt drop per incident/month).
+    const ffAvg = firefighting.average || 0;
+    const stability = Math.round(Math.max(0, Math.min(100, 100 - ffAvg * 8)));
+
+    // Knowledge spread — single-silo-owner concentration.
+    const ownerCounts = {};
+    (silos.files || []).forEach(f => { ownerCounts[f.owner] = (ownerCounts[f.owner] || 0) + 1; });
+    const sortedOwners = Object.values(ownerCounts).sort((a,b)=>b-a);
+    const topSiloShare = (silos.files && silos.files.length) ? sortedOwners[0] / silos.files.length : 0;
+    const knowledge = Math.round(Math.max(0, Math.min(100, 100 - (topSiloShare - 0.25) * 160)));
+
+    // Hotspot — top-3 churn share of total churn.
+    const totalChurn = (churn.files || []).reduce((a,f)=>a+f.changes, 0);
+    const top3 = (churn.files || []).slice(0, 3).reduce((a,f)=>a+f.changes, 0);
+    const top3Share = totalChurn ? top3 / totalChurn : 0;
+    const hotspot = Math.round(Math.max(0, Math.min(100, 100 - (top3Share - 0.3) * 180)));
+
+    const overall = Math.round((busFactor + velocity + stability + knowledge + hotspot) / 5);
+
+    return {
+      overall,
+      components: [
+        { key:'velocity',  label:'Velocity',         value:velocity,  hint:'Commit trend over time' },
+        { key:'stability', label:'Stability',        value:stability, hint:'Low firefighting activity' },
+        { key:'busFactor', label:'Bus Factor',       value:busFactor, hint:'Contributor spread' },
+        { key:'knowledge', label:'Knowledge Spread', value:knowledge, hint:'Few single-owner files' },
+        { key:'hotspot',   label:'Hotspot Focus',    value:hotspot,   hint:'Change evenly distributed' }
+      ]
+    };
   }
 
-  function renderChurnList(id) {
-    var el = document.getElementById(id);
-    if (!el) return;
-    if (!churn.files.length) { el.innerHTML = '<div class="empty">No churn data</div>'; return; }
-    var max = churn.files[0].changes;
-    el.innerHTML = churn.files.map(function (f) {
-      var pct = Math.round(f.changes / max * 100);
-      return '<div class="churn-row"><div class="churn-label" title="' + esc(f.path) + '">' + esc(f.path) + '</div>'
-        + '<div class="churn-track"><div class="churn-fill" style="background:' + COLORS.churn + ';width:' + pct + '%"></div></div>'
-        + '<div class="churn-count">' + f.changes + '</div></div>';
+  function scoreRating(score) {
+    if (score >= 80) return { label: 'Healthy',  tone: 'good' };
+    if (score >= 65) return { label: 'Stable',   tone: 'ok'   };
+    if (score >= 50) return { label: 'Watch',    tone: 'warn' };
+    return                    { label: 'At Risk', tone: 'bad'  };
+  }
+
+  // ——— Theme toggle ———
+  const STORAGE_KEY = 'gitpulse.theme';
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) document.documentElement.setAttribute('data-theme', saved);
+  const themeLabel = document.getElementById('theme-label');
+  themeLabel.textContent = document.documentElement.getAttribute('data-theme');
+  document.getElementById('theme-toggle').addEventListener('click', () => {
+    const cur = document.documentElement.getAttribute('data-theme');
+    const next = cur === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem(STORAGE_KEY, next);
+    themeLabel.textContent = next;
+    renderCharts();
+  });
+
+  // ——— Header ———
+  document.getElementById('repo-name').textContent = meta.repoName;
+  document.getElementById('total-commits').textContent = formatNumber(meta.totalCommits);
+  document.getElementById('window-label').textContent = meta.sinceLabel || meta.since;
+  document.getElementById('gen-date').textContent = new Date(meta.generatedAt)
+    .toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+  if (meta.githubUrl) {
+    const gh = document.getElementById('gh-link');
+    gh.href = meta.githubUrl;
+    gh.style.display = '';
+  }
+
+  // ——— Health ———
+  const health = computeHealth(DATA);
+  const rating = scoreRating(health.overall);
+  document.getElementById('overall-score').innerHTML = health.overall + '<span class="of">/100</span>';
+  const tag = document.getElementById('overall-tag');
+  tag.textContent = rating.label;
+  tag.classList.add(rating.tone);
+
+  document.getElementById('vitals-cols').innerHTML = health.components.map(c => {
+    const tone = c.value >= 75 ? 'good' : c.value >= 55 ? 'warn' : 'bad';
+    const filled = Math.round(c.value / 5);
+    const bar = '▰'.repeat(filled) + '<span class="fade">' + '▱'.repeat(20 - filled) + '</span>';
+    return `<div class="vcol" data-tone="${tone}">
+      <div class="vcol-label">${c.label}</div>
+      <div class="vcol-val">${c.value}<span class="of">/100</span></div>
+      <div class="vcol-bar">${bar}</div>
+      <div class="vcol-hint">${c.hint}</div>
+    </div>`;
+  }).join('');
+
+  // ——— Churn ———
+  document.getElementById('churn-meta').innerHTML =
+    `<span class="flag">--top=${churn.files.length}</span> <span class="flag">--since=${escape(meta.since)}</span>`;
+
+  if (churn.files.length) {
+    const churnMax = churn.files[0].changes;
+    document.getElementById('churn-rows').innerHTML = churn.files.map((f, i) => {
+      const pct = f.changes / churnMax;
+      const len = Math.round(pct * 26);
+      const bar = '█'.repeat(len) + '<span class="fade">' + '░'.repeat(26 - len) + '</span>';
+      return `<div class="ascii-row">
+        <div class="ascii-rank">${String(i+1).padStart(2,'0')}</div>
+        <div class="ascii-path" title="${escape(f.path)}">${escape(f.path)}</div>
+        <div class="ascii-bar">${bar}</div>
+        <div class="ascii-num">${f.changes}</div>
+      </div>`;
     }).join('');
   }
-  renderChurnList('churn-list');
 
-  var noiseNoteEl = document.getElementById('churn-noise-note');
-  if (noiseNoteEl && churn.filtered && churn.filtered.length) {
-    var n = churn.filtered.length;
-    var shown = churn.filtered.slice(0, 3).join(', ');
-    var extra = n > 3 ? ' +' + (n - 3) + ' more' : '';
-    noiseNoteEl.className = 'noise-note';
-    noiseNoteEl.innerHTML = n + ' noise file' + (n > 1 ? 's' : '') + ' hidden ('
-      + esc(shown) + extra + ') \u2014 rerun with <code>--all-files</code> to include.';
+  if (churn.filtered && churn.filtered.length) {
+    const n = churn.filtered.length;
+    const shown = churn.filtered.slice(0,3).map(escape).join(', ');
+    const extra = n > 3 ? ` +${n-3} more` : '';
+    document.getElementById('churn-noise').innerHTML =
+      `${n} noise file${n>1?'s':''} hidden (${shown}${extra}). rerun with <code>--all-files</code>.`;
   }
 
-  function makeMomentumChart(id) {
-    var ctx = document.getElementById(id);
-    if (!ctx) return null;
-    ctx = ctx.getContext('2d');
-    if (!momentum.months.length) { ctx.canvas.parentElement.innerHTML = '<div class="empty">No commit data</div>'; return null; }
-    return new Chart(ctx, {
-      type: 'line',
-      data: { labels: momentum.months, datasets: [{ data: momentum.counts, borderColor: COLORS.momentum, backgroundColor: 'rgba(34,197,94,0.1)', borderWidth: 2, fill: true, tension: 0.3, pointRadius: 2 }] },
-      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
-        scales: { x: { ticks: { color: '#475569', maxRotation: 0, autoSkip: true, maxTicksLimit: 6 }, grid: { color: '#1a2535' } }, y: { ticks: { color: '#475569' }, grid: { color: '#1a2535' }, beginAtZero: true } } },
+  // ——— Momentum ———
+  function renderMomentum() {
+    const svg = document.getElementById('mom-svg');
+    svg.innerHTML = '';
+    const counts = momentum.counts || [];
+    if (!counts.length) return;
+    const W = 1200, H = 240;
+    const pad = { t: 14, r: 20, b: 28, l: 48 };
+    const xs = counts.map((_, i) => pad.l + i * (W - pad.l - pad.r) / Math.max(1, counts.length - 1));
+    const max = Math.max(...counts, 1) * 1.1;
+    const ys = counts.map(c => H - pad.b - (c / max) * (H - pad.t - pad.b));
+    const cs = getComputedStyle(document.documentElement);
+    const accent = cs.getPropertyValue('--accent').trim();
+    const dim = cs.getPropertyValue('--ink-mut').trim();
+
+    let html = '';
+    [0, 0.25, 0.5, 0.75, 1].forEach(f => {
+      const y = H - pad.b - f * (H - pad.t - pad.b);
+      html += `<line x1="${pad.l}" x2="${W-pad.r}" y1="${y}" y2="${y}" stroke="${dim}" stroke-opacity="0.2" stroke-dasharray="2 4"/>`;
+      if (f === 0 || f === 0.5 || f === 1) {
+        html += `<text x="${pad.l - 6}" y="${y+3}" text-anchor="end" font-family="JetBrains Mono" font-size="10" fill="${dim}">${Math.round(max*f)}</text>`;
+      }
     });
-  }
-  charts.momentum = makeMomentumChart('chart-momentum');
 
-  if (momentum.months.length) {
-    var n = momentum.months.length;
-    document.getElementById('momentum-since').textContent = momentum.months[0] + ' \u2192 ' + momentum.months[n - 1];
-    var tEl = document.getElementById('momentum-trend');
-    tEl.textContent = (momentum.trend === 'growing' ? '\u2191' : momentum.trend === 'declining' ? '\u2193' : '\u2192') + ' ' + momentum.trend;
-    tEl.className = 'trend-' + momentum.trend;
-    var avgAll = Math.round(momentum.counts.reduce(function (a, b) { return a + b; }, 0) / n);
-    var last3c = momentum.counts.slice(-3);
-    var avgLast3 = Math.round(last3c.reduce(function (a, b) { return a + b; }, 0) / last3c.length);
-    document.getElementById('momentum-avg').textContent    = avgAll   + ' commits/mo avg';
-    document.getElementById('momentum-recent').textContent = avgLast3 + ' commits/mo (last 3mo)';
-  }
-
-  function makeContributorsChart(id) {
-    var ctx = document.getElementById(id);
-    if (!ctx || !contributors.authors.length) return null;
-    ctx = ctx.getContext('2d');
-    var colors = contributors.authors.map(function (a, i) { return a.name === 'others' ? COLORS.others : COLORS.palette[i % COLORS.palette.length]; });
-    return new Chart(ctx, {
-      type: 'doughnut',
-      data: { labels: contributors.authors.map(function (a) { return a.name; }), datasets: [{ data: contributors.authors.map(function (a) { return a.commits; }), backgroundColor: colors, borderWidth: 0 }] },
-      options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { display: false } } },
+    let d = `M ${xs[0]} ${ys[0]}`;
+    for (let i = 1; i < xs.length; i++) d += ` L ${xs[i]} ${ys[i]}`;
+    const fill = d + ` L ${xs[xs.length-1]} ${H-pad.b} L ${xs[0]} ${H-pad.b} Z`;
+    html += `<path d="${fill}" fill="${accent}" opacity="0.12"/>`;
+    html += `<path d="${d}" fill="none" stroke="${accent}" stroke-width="2"/>`;
+    counts.forEach((c, i) => {
+      html += `<rect x="${xs[i]-3}" y="${ys[i]-3}" width="6" height="6" fill="${accent}"/>`;
     });
+    momentum.months.forEach((m, i) => {
+      if (i % 2 === 0 || i === counts.length - 1) {
+        html += `<text x="${xs[i]}" y="${H - 10}" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="${dim}">${formatMonth(m)}</text>`;
+      }
+    });
+    svg.innerHTML = html;
   }
-  charts.contributors = makeContributorsChart('chart-contributors');
 
-  var legendEl = document.getElementById('contributors-legend');
-  if (legendEl && contributors.authors.length) {
-    legendEl.innerHTML = contributors.authors.slice(0, 8).map(function (a, i) {
-      var color = a.name === 'others' ? COLORS.others : COLORS.palette[i % COLORS.palette.length];
-      var pct   = Math.round(a.commits / contributors.total * 100);
-      return '<div class="legend-row"><div class="legend-color" style="background:' + color + '"></div><div class="legend-name">' + esc(a.name) + '</div><div class="legend-pct">' + pct + '%</div></div>';
+  if (momentum.months && momentum.months.length) {
+    const n = momentum.months.length;
+    document.getElementById('mom-range').textContent =
+      `${formatMonth(momentum.months[0])} → ${formatMonth(momentum.months[n-1])}`;
+    const mt = document.getElementById('mom-trend');
+    const arrow = momentum.trend === 'growing' ? '↑ ' : momentum.trend === 'declining' ? '↓ ' : '→ ';
+    mt.textContent = arrow + (momentum.trend || 'flat');
+    if (momentum.trend === 'growing')   mt.classList.add('good');
+    if (momentum.trend === 'declining') mt.classList.add('bad');
+    const avgAll = Math.round(momentum.counts.reduce((a,b)=>a+b,0)/n);
+    const last3 = momentum.counts.slice(-3);
+    const avgLast = Math.round(last3.reduce((a,b)=>a+b,0)/Math.max(1,last3.length));
+    document.getElementById('mom-avg').textContent = `avg: ${avgAll} commits/mo`;
+    document.getElementById('mom-recent').textContent = `last 3mo: ${avgLast} commits/mo`;
+  }
+
+  // ——— Contributors ———
+  const palette = ['#a5f55a','#7ad846','#58b838','#5fd3d3','#f5b841','#3f8026','#4a5e45','#6b7a65'];
+
+  function renderContrib() {
+    const svg = document.getElementById('contrib-svg');
+    svg.innerHTML = '';
+    const authors = contributors.authors || [];
+    if (!authors.length) return;
+    const cx = 150, cy = 150, R = 130, r = 82;
+    let a0 = -Math.PI / 2;
+    const total = contributors.total || authors.reduce((a,c)=>a+c.commits,0);
+    const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg-panel').trim();
+    let html = '';
+    authors.forEach((author, i) => {
+      const slice = (author.commits / total) * Math.PI * 2;
+      const a1 = a0 + slice;
+      const large = slice > Math.PI ? 1 : 0;
+      const x0 = cx + R * Math.cos(a0), y0 = cy + R * Math.sin(a0);
+      const x1 = cx + R * Math.cos(a1), y1 = cy + R * Math.sin(a1);
+      const x0i = cx + r * Math.cos(a0), y0i = cy + r * Math.sin(a0);
+      const x1i = cx + r * Math.cos(a1), y1i = cy + r * Math.sin(a1);
+      html += `<path d="M ${x0} ${y0} A ${R} ${R} 0 ${large} 1 ${x1} ${y1} L ${x1i} ${y1i} A ${r} ${r} 0 ${large} 0 ${x0i} ${y0i} Z" fill="${palette[i%palette.length]}" stroke="${bg}" stroke-width="2"/>`;
+      a0 = a1;
+    });
+    svg.innerHTML = html;
+  }
+
+  if (contributors.authors && contributors.authors.length) {
+    const total = contributors.total || contributors.authors.reduce((a,c)=>a+c.commits,0);
+    document.getElementById('contrib-num').textContent = contributors.authors.length;
+    const maxContrib = contributors.authors[0].commits;
+    document.getElementById('contrib-list').innerHTML = contributors.authors.map((a, i) => {
+      const pct = Math.round(a.commits / total * 100);
+      const w = Math.round(a.commits / maxContrib * 100);
+      return `<div class="contrib-row">
+        <div class="contrib-dot" style="background:${palette[i%palette.length]}"></div>
+        <div class="contrib-name">${escape(a.name)}</div>
+        <div class="contrib-bar"><span style="width:${w}%;background:${palette[i%palette.length]}"></span></div>
+        <div class="contrib-count">${a.commits}</div>
+        <div class="contrib-pct">${pct}%</div>
+      </div>`;
     }).join('');
-  }
-  var concEl = document.getElementById('contributors-concentration');
-  if (concEl && contributors.authors.length) {
-    var top1    = contributors.authors[0];
-    var top1Pct = Math.round(top1.commits / contributors.total * 100);
-    var top2Pct = contributors.authors.length > 1
-      ? Math.round((top1.commits + contributors.authors[1].commits) / contributors.total * 100)
-      : top1Pct;
-    var concColor, concMsg;
+
+    const top1 = contributors.authors[0];
+    const top1Pct = Math.round(top1.commits / total * 100);
+    const top2Pct = contributors.authors.length > 1
+      ? Math.round((top1.commits + contributors.authors[1].commits) / total * 100) : top1Pct;
+    const concern = document.getElementById('concern');
     if (top1Pct >= 40) {
-      concEl.style.color = '#ef4444';
-      concEl.textContent = '\u26a0 ' + esc(top1.name) + ' holds ' + top1Pct + '% of commits';
+      concern.style.display = 'block';
+      concern.textContent = `${top1.name} owns ${top1Pct}% of commits — largest single-person concentration. consider knowledge sharing.`;
     } else if (top2Pct >= 60) {
-      concEl.style.color = '#f59e0b';
-      concEl.textContent = '\u26a0 Top 2 contributors hold ' + top2Pct + '% of commits';
+      concern.style.display = 'block';
+      concern.textContent = `top 2 contributors own ${top2Pct}% of commits combined.`;
     }
   }
 
-  function ageClass(d) {
-    var mo = (Date.now() - new Date(d)) / (1000 * 60 * 60 * 24 * 30);
-    return mo > 6 ? 'age-old' : mo > 2 ? 'age-medium' : 'age-recent';
-  }
-  var silosEl = document.getElementById('silos-container');
-  if (silosEl) {
-    if (!silos.files.length) {
-      silosEl.innerHTML = '<div class="empty">No knowledge silos detected</div>';
-    } else {
-      var ownerCounts = {};
-      silos.files.forEach(function (f) { ownerCounts[f.owner] = (ownerCounts[f.owner] || 0) + 1; });
-      var ownersSorted = Object.keys(ownerCounts)
-        .map(function (name) { return { name: name, count: ownerCounts[name] }; })
-        .sort(function (a, b) { return b.count - a.count; });
-      var maxCount = ownersSorted[0].count;
-      silosEl.innerHTML = '<div class="churn-list" style="margin-bottom:10px">'
-        + ownersSorted.map(function (o) {
-            var pct = Math.round(o.count / maxCount * 100);
-            return '<div class="churn-row">'
-              + '<div class="churn-label owner-name">' + esc(o.name) + '</div>'
-              + '<div class="churn-track"><div class="churn-fill" style="background:#6366f1;width:' + pct + '%"></div></div>'
-              + '<div class="churn-count">' + o.count + '</div></div>';
-          }).join('')
-        + '</div>';
-      var siloRow = function (f) {
-        return '<tr><td title="' + esc(f.path) + '">' + esc(f.path) + '</td>'
-          + '<td class="owner-name">' + esc(f.owner) + '</td>'
-          + '<td class="' + ageClass(f.lastTouched) + '">' + f.lastTouched + '</td>'
-          + '<td>' + f.commits + '</td></tr>';
-      };
-      var filesShown = false;
-      var filesBtn = document.createElement('button');
-      filesBtn.className = 'show-more-btn';
-      filesBtn.textContent = 'Show all ' + silos.files.length + ' files \u25be';
-      silosEl.appendChild(filesBtn);
-      var tableWrap = document.createElement('div');
-      tableWrap.style.display = 'none';
-      tableWrap.innerHTML = '<table class="silos-table"><thead><tr><th>File</th><th>Sole owner</th><th>Last touched</th><th>Commits</th></tr></thead>'
-        + '<tbody>' + silos.files.map(siloRow).join('') + '</tbody></table>';
-      silosEl.appendChild(tableWrap);
-      filesBtn.addEventListener('click', function () {
-        filesShown = !filesShown;
-        tableWrap.style.display = filesShown ? 'block' : 'none';
-        filesBtn.textContent = filesShown
-          ? 'Hide files \u25b4'
-          : 'Show all ' + silos.files.length + ' files \u25be';
-      });
-    }
+  // ——— Silos ———
+  if (silos.files && silos.files.length) {
+    const ownerCounts = {};
+    silos.files.forEach(f => { ownerCounts[f.owner] = (ownerCounts[f.owner]||0) + 1; });
+    const ownersSorted = Object.entries(ownerCounts).map(([n,c])=>({name:n,count:c})).sort((a,b)=>b.count-a.count);
+    const maxOwner = ownersSorted[0].count;
+    document.getElementById('silos-owners').innerHTML = ownersSorted.map(o => {
+      const len = Math.round(o.count / maxOwner * 20);
+      return `<div class="silos-owner-row">
+        <div class="silos-owner-name">${escape(o.name)}</div>
+        <div class="silos-owner-ct">${o.count} files</div>
+        <div class="silos-owner-bar">${'█'.repeat(len)}<span style="color:var(--ink-mut)">${'░'.repeat(20-len)}</span></div>
+      </div>`;
+    }).join('');
+
+    const ageCls = { old:'date-old', medium:'date-medium', recent:'date-recent' };
+    document.getElementById('silos-tbl').innerHTML = `
+      <thead><tr>
+        <th>path</th><th>owner</th><th>last touched</th><th style="text-align:right">n</th>
+      </tr></thead>
+      <tbody>${silos.files.slice(0,10).map(f => `<tr>
+        <td class="path">${escape(f.path)}</td>
+        <td class="owner">${escape(f.owner)}</td>
+        <td class="${ageCls[ageBucket(f.lastTouched)]}">${escape(f.lastTouched)}</td>
+        <td class="commits">${f.commits}</td>
+      </tr>`).join('')}</tbody>`;
   }
 
-  function makeFirefightingChart(id) {
-    var ctx = document.getElementById(id);
-    if (!ctx) return null;
-    ctx = ctx.getContext('2d');
-    if (!firefighting.months.length) { ctx.canvas.parentElement.innerHTML = '<div class="empty">No firefighting commits detected</div>'; return null; }
-    return new Chart(ctx, {
-      type: 'line',
-      data: { labels: firefighting.months, datasets: [{
-        data: firefighting.counts, borderColor: COLORS.ff, backgroundColor: 'rgba(239,68,68,0.08)',
-        borderWidth: 2, borderDash: [4, 3], fill: true, tension: 0,
-        pointRadius: firefighting.months.map(function (m) { return firefighting.spikes.indexOf(m) >= 0 ? 5 : 2; }),
-        pointBackgroundColor: firefighting.months.map(function (m) { return firefighting.spikes.indexOf(m) >= 0 ? '#ef4444' : '#475569'; }),
-      }] },
-      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
-        scales: { x: { ticks: { color: '#475569', maxRotation: 0, autoSkip: true, maxTicksLimit: 6 }, grid: { color: '#1a2535' } }, y: { ticks: { color: '#475569' }, grid: { color: '#1a2535' }, beginAtZero: true } } },
-    });
-  }
-  charts.firefighting = makeFirefightingChart('chart-firefighting');
+  // ——— Firefighting ———
+  function renderFF() {
+    const svg = document.getElementById('ff-svg');
+    svg.innerHTML = '';
+    const counts = firefighting.counts || [];
+    if (!counts.length) return;
+    const W = 1200, H = 200;
+    const pad = { t: 12, r: 20, b: 28, l: 48 };
+    const xs = counts.map((_, i) => pad.l + i * (W - pad.l - pad.r) / Math.max(1, counts.length - 1));
+    const max = Math.max(...counts, 1) * 1.2;
+    const cs = getComputedStyle(document.documentElement);
+    const red = cs.getPropertyValue('--red').trim();
+    const dim = cs.getPropertyValue('--ink-mut').trim();
+    const amber = cs.getPropertyValue('--amber').trim();
 
-  var ffSpikeHintEl = document.getElementById('ff-spike-hint');
-  if (ffSpikeHintEl && !firefighting.spikes.length) ffSpikeHintEl.style.display = 'none';
+    let html = '';
+    const avgY = H - pad.b - ((firefighting.average||0) / max) * (H - pad.t - pad.b);
+    html += `<line x1="${pad.l}" x2="${W-pad.r}" y1="${avgY}" y2="${avgY}" stroke="${dim}" stroke-opacity="0.6" stroke-dasharray="4 4"/>`;
+    html += `<text x="${W-pad.r-4}" y="${avgY-6}" text-anchor="end" font-family="JetBrains Mono" font-size="10" fill="${dim}">avg ${(firefighting.average||0).toFixed(1)}</text>`;
 
-  if (firefighting.months.length) {
-    document.getElementById('ff-avg').textContent    = firefighting.average.toFixed(1) + ' incidents/mo avg';
-    document.getElementById('ff-spikes').textContent = firefighting.spikes.length
-      ? '\u26a0 spike' + (firefighting.spikes.length > 1 ? 's' : '') + ' detected: ' + firefighting.spikes.join(', ')
-      : 'no spikes detected';
+    const barW = (W - pad.l - pad.r) / counts.length * 0.55;
+    const spikes = firefighting.spikes || [];
+    counts.forEach((c, i) => {
+      const isSpike = spikes.indexOf(firefighting.months[i]) >= 0;
+      const h = (c / max) * (H - pad.t - pad.b);
+      const x = xs[i] - barW / 2;
+      const y = H - pad.b - h;
+      html += `<rect x="${x}" y="${y}" width="${barW}" height="${h}" fill="${isSpike ? red : amber}" opacity="${isSpike ? 1 : 0.7}"/>`;
+      if (isSpike) {
+        html += `<text x="${xs[i]}" y="${y-6}" text-anchor="middle" font-family="JetBrains Mono" font-size="11" font-weight="600" fill="${red}">${c}</text>`;
+      }
+    });
+    firefighting.months.forEach((m, i) => {
+      if (i % 2 === 0 || i === counts.length - 1) {
+        html += `<text x="${xs[i]}" y="${H - 10}" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="${dim}">${formatMonth(m)}</text>`;
+      }
+    });
+    svg.innerHTML = html;
   }
 
-  var ffToggle = document.getElementById('ff-toggle');
-  var ffWrap   = document.getElementById('ff-commits-wrap');
-  if (firefighting.commits && firefighting.commits.length && ffToggle) {
-    ffToggle.style.display = 'inline-block';
-    ffToggle.textContent = 'Show ' + firefighting.commits.length + ' commits \u25be';
-    var byMonth = {};
-    firefighting.commits.forEach(function (c) {
-      if (!byMonth[c.month]) byMonth[c.month] = [];
-      byMonth[c.month].push(c);
-    });
-    var ffHtml = '';
-    Object.keys(byMonth).sort().reverse().forEach(function (month) {
-      ffHtml += '<div class="ff-month-group"><div class="ff-month-label">' + month + '</div>';
-      byMonth[month].forEach(function (c) {
-        var shortHash = c.hash.slice(0, 7);
-        var hashEl = meta.githubUrl
-          ? '<a class="ff-commit-hash" href="' + meta.githubUrl + '/commit/' + c.hash + '" target="_blank" rel="noopener">' + shortHash + '</a>'
-          : '<span class="ff-commit-hash">' + shortHash + '</span>';
-        ffHtml += '<div class="ff-commit-row">' + hashEl + '<span class="ff-commit-subject">' + esc(c.subject) + '</span></div>';
-      });
-      ffHtml += '</div>';
-    });
-    document.getElementById('ff-commits').innerHTML = ffHtml;
-    ffToggle.addEventListener('click', function () {
-      var open = ffWrap.style.display !== 'none';
-      ffWrap.style.display = open ? 'none' : 'block';
-      ffToggle.textContent = open
-        ? 'Show ' + firefighting.commits.length + ' commits \u25be'
-        : 'Hide commits \u25b4';
-    });
+  document.getElementById('ff-avg').textContent =
+    `avg: ${(firefighting.average||0).toFixed(1)} incidents/mo · ${(firefighting.commits||[]).length} total`;
+  const ffSp = document.getElementById('ff-spikes');
+  if (firefighting.spikes && firefighting.spikes.length) {
+    ffSp.textContent = `⚠ spikes: ${firefighting.spikes.map(formatMonth).join(', ')}`;
+    ffSp.classList.add('bad');
+  } else {
+    ffSp.textContent = '✓ no spikes';
+    ffSp.classList.add('good');
   }
+
+  const ffToggle = document.getElementById('ff-toggle');
+  const ffLog = document.getElementById('ff-log');
+  if (firefighting.commits && firefighting.commits.length) {
+    ffToggle.textContent = `tail incidents.log  (${firefighting.commits.length})`;
+    const byMonth = {};
+    firefighting.commits.forEach(c => (byMonth[c.month] = byMonth[c.month]||[]).push(c));
+    ffLog.innerHTML = Object.keys(byMonth).sort().reverse().map(month => {
+      const isSpike = (firefighting.spikes||[]).indexOf(month) >= 0;
+      return `<div class="ff-log-month">
+        <div class="ff-log-month-hdr">
+          <span>${formatMonth(month)}</span>
+          <span class="${isSpike ? 'spike' : ''}">${byMonth[month].length} incident${byMonth[month].length>1?'s':''}${isSpike ? ' · SPIKE' : ''}</span>
+        </div>
+        ${byMonth[month].map(c => {
+          const kind = (c.subject.match(/^([a-z]+)/i) || ['', 'commit'])[1].toLowerCase();
+          const rest = c.subject.replace(/^[a-z]+:\s*/i, '');
+          const url = meta.githubUrl ? `${meta.githubUrl}/commit/${c.hash}` : '#';
+          return `<div class="ff-log-row">
+            <a class="ff-log-hash" href="${url}" target="_blank" rel="noopener">${c.hash.slice(0,7)}</a>
+            <span class="ff-log-kind ${kind}">${kind}</span>
+            <span class="ff-log-subj">${escape(rest)}</span>
+          </div>`;
+        }).join('')}
+      </div>`;
+    }).join('');
+    ffToggle.addEventListener('click', () => {
+      const open = ffLog.style.display !== 'none';
+      ffLog.style.display = open ? 'none' : 'block';
+      ffToggle.textContent = open ? `tail incidents.log  (${firefighting.commits.length})` : `hide incidents.log`;
+    });
+  } else {
+    ffToggle.style.display = 'none';
+  }
+
+  function renderCharts() { renderMomentum(); renderContrib(); renderFF(); }
+  renderCharts();
 })();
 </script>
 </body>

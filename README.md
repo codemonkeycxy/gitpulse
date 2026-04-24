@@ -41,6 +41,15 @@ npx @codemonkeycxy/gitpulse --no-open
 | `--json` | — | Output raw collected data as JSON |
 | `--all-files` | — | Include noise files (lock files, generated files, and vendor directories) in the churn list |
 
+## Publishing to npm
+
+1. Bump the `version` field in `package.json`
+2. Run `npm test` to verify nothing is broken
+3. Commit: `git commit -am "chore: bump to X.Y.Z"`
+4. Publish: `npm publish --access public`
+
+> The `--access public` flag is required because the package is scoped (`@codemonkeycxy/gitpulse`).
+
 ## Inspiration
 
 The core insight, that you can understand a codebase's health before reading a single line of code, comes from [*Git Commands I Use Before Reading Code*](https://piechowski.io/post/git-commands-before-reading-code/) by Grzegorz Piechowski. gitpulse automates those ideas.
