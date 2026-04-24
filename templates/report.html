@@ -333,7 +333,13 @@
     border-bottom: 1px dashed var(--rule-br);
     padding-bottom: 6px;
   }
-  .silos-owner-row { display: grid; grid-template-columns: 1fr auto; gap: 12px; padding: 6px 0; font-size: 13px; }
+  .silos-owner-row {
+    display: grid; grid-template-columns: 1fr auto; gap: 12px; padding: 6px 8px; font-size: 13px;
+    cursor: pointer; margin: 0 -8px; border-radius: 2px;
+  }
+  .silos-owner-row:hover { background: var(--bg-alt); }
+  .silos-owner-row.active { background: var(--bg-alt); outline: 1px solid var(--rule-br); }
+  .silos-owner-row.active .silos-owner-name { color: var(--accent); }
   .silos-owner-name { color: var(--ink-bright); }
   .silos-owner-bar {
     grid-column: 1 / -1;
@@ -821,7 +827,7 @@
     const maxContrib = contributors.authors[0].commits;
     document.getElementById('contrib-list').innerHTML = contributors.authors.map((a, i) => {
       const pct = Math.round(a.commits / total * 100);
-      const w = Math.round(a.commits / maxContrib * 100);
+      const w = Math.min(100, Math.round(a.commits / maxContrib * 100));
       return `<div class="contrib-row">
         <div class="contrib-dot" style="background:${palette[i%palette.length]}"></div>
         <div class="contrib-name">${escape(a.name)}</div>
@@ -851,26 +857,51 @@
     silos.files.forEach(f => { ownerCounts[f.owner] = (ownerCounts[f.owner]||0) + 1; });
     const ownersSorted = Object.entries(ownerCounts).map(([n,c])=>({name:n,count:c})).sort((a,b)=>b.count-a.count);
     const maxOwner = ownersSorted[0].count;
+
+    const ageCls = { old:'date-old', medium:'date-medium', recent:'date-recent' };
+    let activeOwner = null;
+
+    function renderSilosTable(filterOwner) {
+      const rows = filterOwner
+        ? silos.files.filter(f => f.owner === filterOwner)
+        : silos.files.slice().sort((a,b) => b.lastTouched.localeCompare(a.lastTouched)).slice(0, 10);
+      document.getElementById('silos-tbl').innerHTML = `
+        <thead><tr>
+          <th>path</th><th>owner</th><th>last touched</th><th style="text-align:right">n</th>
+        </tr></thead>
+        <tbody>${rows.map(f => `<tr>
+          <td class="path">${escape(f.path)}</td>
+          <td class="owner">${escape(f.owner)}</td>
+          <td class="${ageCls[ageBucket(f.lastTouched)]}">${escape(f.lastTouched)}</td>
+          <td class="commits">${f.commits}</td>
+        </tr>`).join('')}</tbody>`;
+    }
+
     document.getElementById('silos-owners').innerHTML = ownersSorted.map(o => {
       const len = Math.round(o.count / maxOwner * 20);
-      return `<div class="silos-owner-row">
+      return `<div class="silos-owner-row" data-owner="${escape(o.name)}">
         <div class="silos-owner-name">${escape(o.name)}</div>
         <div class="silos-owner-ct">${o.count} files</div>
         <div class="silos-owner-bar">${'█'.repeat(len)}<span style="color:var(--ink-mut)">${'░'.repeat(20-len)}</span></div>
       </div>`;
     }).join('');
 
-    const ageCls = { old:'date-old', medium:'date-medium', recent:'date-recent' };
-    document.getElementById('silos-tbl').innerHTML = `
-      <thead><tr>
-        <th>path</th><th>owner</th><th>last touched</th><th style="text-align:right">n</th>
-      </tr></thead>
-      <tbody>${silos.files.slice(0,10).map(f => `<tr>
-        <td class="path">${escape(f.path)}</td>
-        <td class="owner">${escape(f.owner)}</td>
-        <td class="${ageCls[ageBucket(f.lastTouched)]}">${escape(f.lastTouched)}</td>
-        <td class="commits">${f.commits}</td>
-      </tr>`).join('')}</tbody>`;
+    document.getElementById('silos-owners').addEventListener('click', e => {
+      const row = e.target.closest('.silos-owner-row');
+      if (!row) return;
+      const owner = row.dataset.owner;
+      if (activeOwner === owner) {
+        activeOwner = null;
+        row.classList.remove('active');
+      } else {
+        document.querySelectorAll('.silos-owner-row.active').forEach(r => r.classList.remove('active'));
+        row.classList.add('active');
+        activeOwner = owner;
+      }
+      renderSilosTable(activeOwner);
+    });
+
+    renderSilosTable(null);
   }
 
   // ——— Firefighting ———
