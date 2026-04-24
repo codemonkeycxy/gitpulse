@@ -1,6 +1,6 @@
 {
   "name": "@codemonkeycxy/gitpulse",
-  "version": "0.1.19",
+  "version": "0.1.20",
   "description": "A quick health check for any git repository, surfacing potential problem areas from commit history",
   "bin": {
     "gitpulse": "bin/gitpulse.js"
