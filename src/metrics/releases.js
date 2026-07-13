@@ -12,14 +12,6 @@ function monthRange(from, to) {
   return months;
 }
 
-// A tag is a hotfix when it looks like a semver and the patch segment is > 0.
-// e.g. v1.2.1, 3.0.2 → hotfix; v1.2.0, 2.0.0, non-semver → release.
-function tagKind(name) {
-  const m = name.replace(/^v/i, '').match(/^(\d+)\.(\d+)\.(\d+)/);
-  if (!m) return 'release';
-  return parseInt(m[3], 10) > 0 ? 'hotfix' : 'release';
-}
-
 async function collect(repoPath, { since }) {
   let output;
   try {
@@ -28,7 +20,7 @@ async function collect(repoPath, { since }) {
       repoPath
     );
   } catch {
-    return { total: 0, totalReleases: 0, totalHotfixes: 0, tags: [], months: [], releaseCounts: [], hotfixCounts: [] };
+    return { total: 0, tags: [], months: [], counts: [] };
   }
 
   const sinceMs = new Date(since).getTime();
@@ -45,31 +37,19 @@ async function collect(repoPath, { since }) {
     const ts = new Date(dateStr).getTime();
     if (isNaN(ts) || ts < sinceMs) continue;
     const month = dateStr.slice(0, 7); // YYYY-MM
-    const kind  = tagKind(name);
-    tags.push({ name, date: dateStr, month, kind });
+    tags.push({ name, date: dateStr, month });
   }
 
-  if (tags.length === 0) {
-    return { total: 0, totalReleases: 0, totalHotfixes: 0, tags: [], months: [], releaseCounts: [], hotfixCounts: [] };
-  }
+  if (tags.length === 0) return { total: 0, tags: [], months: [], counts: [] };
 
   const allMonths = tags.map(t => t.month).sort();
   const nowMonth  = new Date().toISOString().slice(0, 7);
   const months    = monthRange(allMonths[0], nowMonth);
+  const freq      = new Map();
+  for (const t of tags) freq.set(t.month, (freq.get(t.month) ?? 0) + 1);
+  const counts = months.map(m => freq.get(m) ?? 0);
 
-  const releaseFreq = new Map();
-  const hotfixFreq  = new Map();
-  for (const t of tags) {
-    const map = t.kind === 'hotfix' ? hotfixFreq : releaseFreq;
-    map.set(t.month, (map.get(t.month) ?? 0) + 1);
-  }
-
-  const releaseCounts = months.map(m => releaseFreq.get(m) ?? 0);
-  const hotfixCounts  = months.map(m => hotfixFreq.get(m)  ?? 0);
-  const totalReleases = tags.filter(t => t.kind === 'release').length;
-  const totalHotfixes = tags.filter(t => t.kind === 'hotfix').length;
-
-  return { total: tags.length, totalReleases, totalHotfixes, tags, months, releaseCounts, hotfixCounts };
+  return { total: tags.length, tags, months, counts };
 }
 
 module.exports = { collect };
