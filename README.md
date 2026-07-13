@@ -45,7 +45,8 @@ npx @codemonkeycxy/gitpulse --no-open
 
 1. Run `npm test` to verify nothing is broken
 2. Bump and commit: `npm version patch` (or `minor` / `major`)
-3. Publish: `npm publish --access public`
+3. Login via `npm login`
+4. Publish: `npm publish --access public`
 
 > The `--access public` flag is required because the package is scoped (`@codemonkeycxy/gitpulse`).
 
