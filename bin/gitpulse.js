@@ -12,6 +12,7 @@ const momentum = require('../src/metrics/momentum');
 const contributors = require('../src/metrics/contributors');
 const silos = require('../src/metrics/silos');
 const firefighting = require('../src/metrics/firefighting');
+const releases = require('../src/metrics/releases');
 const { render } = require('../src/renderer/html');
 
 // Minimal TTY spinner — no extra dependencies.
@@ -141,12 +142,14 @@ async function main() {
     contributorsData,
     silosData,
     firefightingData,
+    releasesData,
   ] = await Promise.all([
     churn.collect(rootPath, metricOptions),
     momentum.collect(rootPath, metricOptions),
     contributors.collect(rootPath, metricOptions),
     silos.collect(rootPath, metricOptions),
     firefighting.collect(rootPath, metricOptions),
+    releases.collect(rootPath, metricOptions),
   ]);
 
   stopSpinner();
@@ -166,6 +169,7 @@ async function main() {
     contributors: contributorsData,
     silos: silosData,
     firefighting: firefightingData,
+    releases: releasesData,
   };
 
   if (opts.json) {
